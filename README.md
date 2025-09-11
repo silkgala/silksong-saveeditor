@@ -2,7 +2,7 @@
 ## https://bloodorca.github.io/hollow/
 Online save file editor. 
 
-The steps behind decryption and encryption were taken from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
+Updated version of the online save editor by @bloodorca /hollow:masterThe steps behind decryption and encryption were taken from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
 
 
 ### Instructions 
