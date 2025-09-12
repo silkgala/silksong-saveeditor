@@ -145,12 +145,10 @@ class App extends React.Component {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
             const relicData = newState.playerData.Relics.savedData[relicIndex].Data;
 
-            // Reset all flags first
             relicData.IsCollected = false;
             relicData.IsDeposited = false;
             relicData.HasSeenInRelicBoard = false;
 
-            // Set flags based on the new status (cascading logic)
             if (newStatus === "collected") {
                 relicData.IsCollected = true;
             } else if (newStatus === "deposited") {
@@ -161,7 +159,6 @@ class App extends React.Component {
                 relicData.IsDeposited = true;
                 relicData.HasSeenInRelicBoard = true;
             }
-            // "none" case is handled by the initial reset
             return { saveData: newState };
         });
     }
@@ -181,6 +178,62 @@ class App extends React.Component {
             const jsonString = JSON.stringify(this.state.saveData, null, 2);
             DownloadData(jsonString, this.state.fileName.replace('.dat', '.json'));
         } catch (err) { this.setState({ error: "Failed to save the JSON file." }); }
+    }
+
+    // --- Bulk Action Handlers ---
+    handleSelectAll = (section) => {
+        this.setState(prevState => {
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            const pd = newState.playerData;
+
+            switch (section) {
+                case 'upgrades': {
+                    const upgradeKeys = Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal');
+                    upgradeKeys.forEach(key => pd[key] = true);
+                    break;
+                }
+                case 'tools': {
+                    if (pd.Tools && pd.Tools.savedData) {
+                        pd.Tools.savedData.forEach(tool => {
+                            tool.Data.IsUnlocked = true;
+                            tool.Data.HasBeenSeen = true;
+                        });
+                    }
+                    break;
+                }
+                case 'crest': {
+                    if (pd.ToolEquips && pd.ToolEquips.savedData) {
+                        pd.ToolEquips.savedData.forEach(crest => {
+                            crest.Data.IsUnlocked = true;
+                            if (crest.Data.Slots) {
+                                crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
+                            }
+                        });
+                    }
+                    break;
+                }
+                case 'maps': {
+                    const mapKeys = Object.keys(pd).filter(k => k.startsWith('Has') && k.endsWith('Map'));
+                    const mapPinKeys = Object.keys(pd).filter(k => k.startsWith('hasPin'));
+                    mapKeys.forEach(key => pd[key] = true);
+                    mapPinKeys.forEach(key => pd[key] = true);
+                    break;
+                }
+                case 'fastTravel': {
+                    const fastTravelKeys = Object.keys(pd).filter(k => k.startsWith('Unlocked') || k === 'bellCentipedeAppeared');
+                    fastTravelKeys.forEach(key => pd[key] = true);
+                    break;
+                }
+                case 'savedFleas': {
+                    const savedFleaKeys = Object.keys(pd).filter(k => k.startsWith('SavedFlea_'));
+                    savedFleaKeys.forEach(key => pd[key] = true);
+                    break;
+                }
+                default:
+                    break;
+            }
+            return { saveData: newState };
+        });
     }
 
     // --- Helper Functions for Rendering ---
@@ -229,7 +282,8 @@ class App extends React.Component {
                         <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/</code></td></tr>
                         <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
                     </tbody></table>
-                    <p className="notes"><code>user1.dat</code> for save slot 1, etc. (4 total slots).</p>
+                    <p className="notes"><strong><code>user1.dat</code> for save slot 1, etc. (4 total slots).</strong></p>
+                    <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
                 </div>
 
                 <div className="warning">Always backup your save files (.dat) before editing!</div>
@@ -261,16 +315,21 @@ class App extends React.Component {
                         </div>
 
                         <div className="editor-section">
-                            <h2>Upgrades</h2>
+                            <div className="editor-section-header">
+                                <h2>Upgrades</h2>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('upgrades')}>Select All</button>
+                            </div>
                             <div className="form-grid">
                                 {upgradeKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                                 <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
                             </div>
                         </div>
 
-                        {/* GUARD CLAUSE: Only render if Tools data exists */}
                         {pd.Tools && pd.Tools.savedData && <div className="editor-section">
-                            <h2>Tools</h2>
+                            <div className="editor-section-header">
+                                <h2>Tools</h2>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('tools')}>Select All</button>
+                            </div>
                             <div className="form-grid">
                                 {pd.Tools.savedData.map((tool, index) => (
                                     <div key={tool.Name} className="tool-item-group">
@@ -284,9 +343,11 @@ class App extends React.Component {
                             </div>
                         </div>}
 
-                        {/* GUARD CLAUSE: Only render if Crest data exists */}
                         {pd.ToolEquips && pd.ToolEquips.savedData && <div className="editor-section">
-                            <h2>Crest</h2>
+                            <div className="editor-section-header">
+                                <h2>Crest</h2>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('crest')}>Select All</button>
+                            </div>
                             <div className="form-grid">
                                 {pd.ToolEquips.savedData.map((crest, crestIndex) => (
                                     <div key={crest.Name} className="crest-item-group">
@@ -310,7 +371,10 @@ class App extends React.Component {
                         </div>}
 
                         <div className="editor-section">
-                            <h2>Maps</h2>
+                            <div className="editor-section-header">
+                                <h2>Maps</h2>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('maps')}>Select All</button>
+                            </div>
                             <h3>Obtained Maps</h3>
                             <div className="form-grid">
                                 {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
@@ -322,14 +386,16 @@ class App extends React.Component {
                         </div>
 
                         <div className="editor-section">
-                            <h2>Fast Travel</h2>
+                            <div className="editor-section-header">
+                                <h2>Fast Travel</h2>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('fastTravel')}>Select All</button>
+                            </div>
                             <div className="form-grid">
                                 {fastTravelKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                                 <div className="form-group"><label>Fast Travel NPC Location</label><input type="number" value={pd.FastTravelNPCLocation} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'FastTravelNPCLocation')} /></div>
                             </div>
                         </div>
 
-                        {/* GUARD CLAUSE: Only render if Collectables data exists */}
                         {pd.Collectables && pd.Collectables.savedData && <div className="editor-section">
                             <h2>Collectables</h2>
                             <div className="form-grid">
@@ -348,7 +414,10 @@ class App extends React.Component {
 
                         <div className="editor-section">
                             <h2>Fleas</h2>
-                            <h3>Saved Fleas</h3>
+                            <div className="editor-subsection-header">
+                                <h3>Saved Fleas</h3>
+                                <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('savedFleas')}>Select All</button>
+                            </div>
                             <div className="form-grid">
                                 {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                             </div>
@@ -362,7 +431,6 @@ class App extends React.Component {
                             </div>
                         </div>
 
-                        {/* GUARD CLAUSE: Only render if Relic data exists */}
                         {pd.Relics && pd.Relics.savedData && <div className="editor-section">
                             <h2>Relics</h2>
                             <div className="form-grid">
@@ -382,7 +450,6 @@ class App extends React.Component {
                             </div>
                         </div>}
 
-                        {/* GUARD CLAUSE: Only render if Quest data exists */}
                         {pd.QuestCompletionData && pd.QuestCompletionData.savedData && <div className="editor-section">
                             <h2>Quests</h2>
                             <div className="form-grid">

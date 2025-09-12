@@ -44,7 +44,9 @@ h1 {
 
 h2 {
     color: var(--primary-color);
-    margin: 0;
+    margin-top: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
 }
 
 h3 {
@@ -227,13 +229,45 @@ hr {
     border: 1px solid var(--border-color);
 }
 
-.section-header {
+.editor-section-header, .editor-subsection-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.editor-section-header {
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 10px;
     margin-bottom: 15px;
+}
+
+.editor-subsection-header {
+    margin-top: 20px;
+    margin-bottom: 10px;
+    border-bottom: 1px dashed var(--border-color);
+    padding-bottom: 5px;
+}
+
+    .editor-section-header h2,
+    .editor-subsection-header h3 {
+        margin: 0;
+        border: none;
+        padding: 0;
+    }
+
+.editor-section-header h2 {
+    color: var(--primary-color);
+}
+
+.editor-subsection-header h3 {
+    color: var(--text-muted-color);
+    font-weight: 500;
+}
+
+.btn-select-all {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    flex-shrink: 0;
 }
 
 .form-grid {
@@ -274,12 +308,6 @@ input[type="number"] {
     align-items: center;
     gap: 10px;
 }
-
-    .checkbox-group label {
-        margin: 0;
-        font-weight: 400;
-    }
-
 
 input[type="checkbox"], input[type="radio"] {
     width: 1.3em;
