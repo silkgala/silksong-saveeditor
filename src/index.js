@@ -15,7 +15,7 @@ class App extends React.Component {
         dragging: false,
         error: null
     }
-    
+
     // --- Drag and Drop Handlers ---
     handleDragEnter = (e) => {
         e.preventDefault();
@@ -80,20 +80,16 @@ class App extends React.Component {
     }
 
     // --- Editor Field Handlers ---
-    // A generic handler for nested numeric values.
     handleNumericChange = (e, ...keys) => {
         const value = parseInt(e.target.value, 10) || 0;
         this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState)); // Deep copy
+            const newState = JSON.parse(JSON.stringify(prevState));
             let current = newState.saveData;
-            // Traverse the keys to get to the parent object
             for (let i = 0; i < keys.length - 1; i++) {
                 current = current[keys[i]];
             }
-            // Update the final key
             current[keys[keys.length - 1]] = value;
 
-            // Special cases for linked values
             if (keys.includes('health')) {
                 newState.saveData.playerData.maxHealth = value;
             }
@@ -101,21 +97,20 @@ class App extends React.Component {
                 newState.saveData.playerData.silkMax = value;
             }
 
-            return newState;
+            return { saveData: newState.saveData };
         });
     }
 
-    // A generic handler for nested boolean values (checkboxes).
     handleCheckboxChange = (e, ...keys) => {
         const value = e.target.checked;
         this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState)); // Deep copy
+            const newState = JSON.parse(JSON.stringify(prevState));
             let current = newState.saveData;
             for (let i = 0; i < keys.length - 1; i++) {
                 current = current[keys[i]];
             }
             current[keys[keys.length - 1]] = value;
-            return newState;
+            return { saveData: newState.saveData };
         });
     }
 
@@ -151,6 +146,13 @@ class App extends React.Component {
         return (
             <div id="wrapper">
                 <h1>Silksong Save Editor</h1>
+                <div className="credits">
+                    <a href="https://github.com/just-addwater/silksong-saveeditor" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
+                    <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
+                    Credit to:
+                    <a href="https://github.com/bloodorca/hollow" target="_blank" rel="noopener noreferrer">Bloodorca</a> &
+                    <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer">KayDeeTee</a>
+                </div>
 
                 <div className="instructions">
                     <h2>Save File Locations</h2>
@@ -162,10 +164,10 @@ class App extends React.Component {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr><td>Windows</td><td><code>%USERPROFILE%\AppData\LocalLow\Team Cherry\Hollow Knight Silksong\</code></td></tr>
-                            <tr><td>Microsoft Store</td><td><code>%LOCALAPPDATA%\Packages\TeamCherry.HollowKnightSilksong_y4jvztpgccj42\SystemAppData\wgs</code></td></tr>
-                            <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/default</code></td></tr>
-                            <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Hollow Knight Silksong/</code></td></tr>
+                            <tr><td>Windows</td><td><code>%USERPROFILE%\AppData\LocalLow\Team Cherry\Silksong\</code></td></tr>
+                            <tr><td>Microsoft Store</td><td><code>%LOCALAPPDATA%\Packages\TeamCherry.Silksong_y4jvztpgccj42\SystemAppData\wgs</code></td></tr>
+                            <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/</code></td></tr>
+                            <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
                         </tbody>
                     </table>
                     <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
@@ -195,9 +197,10 @@ class App extends React.Component {
                     <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData}>Save .json</button>
                     <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData}>Save Encrypted .dat</button>
                 </div>
-                
+
                 {saveData && (
                     <div className="editor-container">
+                        {/* --- BASIC STATS --- */}
                         <div className="editor-section">
                             <h2>Basic Stats</h2>
                             <div className="form-grid">
@@ -218,30 +221,66 @@ class App extends React.Component {
                             </div>
                         </div>
 
+                        {/* --- UPGRADES --- */}
                         <div className="editor-section">
                             <h2>Upgrades <span className="note">(Warning: Spoilers)</span></h2>
                             <div className="form-grid">
-                               <div className="form-group">
+                                <div className="form-group">
                                     <label htmlFor="nailUpgrades">Needle Upgrades</label>
                                     <input id="nailUpgrades" type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNumericChange(e, 'playerData', 'nailUpgrades')} />
                                     <span className="note">Value from 0 to 4.</span>
                                 </div>
                                 <div className="form-group">
-                                     <label htmlFor="hasNeedleThrow">Has Needle Throw</label>
-                                     <div className="checkbox-group">
-                                         <input id="hasNeedleThrow" type="checkbox" checked={pd.hasNeedleThrow} onChange={(e) => this.handleCheckboxChange(e, 'playerData', 'hasNeedleThrow')} />
-                                     </div>
+                                    <label htmlFor="hasNeedleThrow">Has Needle Throw</label>
+                                    <div className="checkbox-group">
+                                        <input id="hasNeedleThrow" type="checkbox" checked={pd.hasNeedleThrow} onChange={(e) => this.handleCheckboxChange(e, 'playerData', 'hasNeedleThrow')} />
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
+                        {/* --- TOOLS --- */}
                         <div className="editor-section">
-                            <h2>Map</h2>
-                            <p className="note">Map editing features are coming soon.</p>
+                            <h2>Tools</h2>
+                            <p className="note">Tool editing features are coming soon.</p>
                         </div>
 
+                        {/* --- FAST TRAVEL --- */}
                         <div className="editor-section">
-                            <h2>Enemies Seen</h2>
+                            <h2>Fast Travel</h2>
+                            <p className="note">Fast Travel editing features are coming soon.</p>
+                        </div>
+
+                        {/* --- FLEAS --- */}
+                        <div className="editor-section">
+                            <h2>Fleas</h2>
+                            <p className="note">Flea editing features are coming soon.</p>
+                        </div>
+
+                        {/* --- EVENTS --- */}
+                        <div className="editor-section">
+                            <h2>Events</h2>
+                            <h3>Bosses</h3>
+                            <p className="note">Boss event editing features are coming soon.</p>
+                            <h3>World Events</h3>
+                            <p className="note">World event editing features are coming soon.</p>
+                        </div>
+
+                        {/* --- QUESTS --- */}
+                        <div className="editor-section">
+                            <h2>Quests</h2>
+                            <p className="note">Quest editing features are coming soon.</p>
+                        </div>
+
+                        {/* --- RELICS --- */}
+                        <div className="editor-section">
+                            <h2>Relics</h2>
+                            <p className="note">Relic editing features are coming soon.</p>
+                        </div>
+
+                        {/* --- BESTIARY --- */}
+                        <div className="editor-section">
+                            <h2>Bestiary</h2>
                             <p className="note">Bestiary editing features are coming soon.</p>
                         </div>
                     </div>
