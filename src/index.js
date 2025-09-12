@@ -132,6 +132,40 @@ class App extends React.Component {
         });
     }
 
+    handleCollectableChange = (index, value) => {
+        this.setState(prevState => {
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            newState.playerData.Collectables.savedData[index].Data.Amount = value;
+            return { saveData: newState };
+        });
+    }
+
+    handleRelicChange = (relicIndex, newStatus) => {
+        this.setState(prevState => {
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            const relicData = newState.playerData.Relics.savedData[relicIndex].Data;
+
+            // Reset all flags first
+            relicData.IsCollected = false;
+            relicData.IsDeposited = false;
+            relicData.HasSeenInRelicBoard = false;
+
+            // Set flags based on the new status (cascading logic)
+            if (newStatus === "collected") {
+                relicData.IsCollected = true;
+            } else if (newStatus === "deposited") {
+                relicData.IsCollected = true;
+                relicData.IsDeposited = true;
+            } else if (newStatus === "seen") {
+                relicData.IsCollected = true;
+                relicData.IsDeposited = true;
+                relicData.HasSeenInRelicBoard = true;
+            }
+            // "none" case is handled by the initial reset
+            return { saveData: newState };
+        });
+    }
+
     // --- Save Handlers ---
     handleSaveEncrypted = () => {
         if (!this.state.saveData) return;
@@ -149,11 +183,18 @@ class App extends React.Component {
         } catch (err) { this.setState({ error: "Failed to save the JSON file." }); }
     }
 
-    // Helper to determine the current status of a quest for radio buttons
+    // --- Helper Functions for Rendering ---
     getQuestStatus = (questData) => {
         if (questData.IsCompleted) return "completed";
         if (questData.IsAccepted) return "accepted";
         if (questData.HasBeenSeen) return "seen";
+        return "none";
+    }
+
+    getRelicStatus = (relicData) => {
+        if (relicData.HasSeenInRelicBoard) return "seen";
+        if (relicData.IsDeposited) return "deposited";
+        if (relicData.IsCollected) return "collected";
         return "none";
     }
 
@@ -288,6 +329,23 @@ class App extends React.Component {
                             </div>
                         </div>
 
+                        {/* GUARD CLAUSE: Only render if Collectables data exists */}
+                        {pd.Collectables && pd.Collectables.savedData && <div className="editor-section">
+                            <h2>Collectables</h2>
+                            <div className="form-grid">
+                                {pd.Collectables.savedData.map((collectable, index) => (
+                                    <div key={collectable.Name} className="form-group">
+                                        <label>{collectable.Name.replace(/_/g, ' ')}</label>
+                                        <input
+                                            type="number"
+                                            value={collectable.Data.Amount}
+                                            onChange={(e) => this.handleCollectableChange(index, parseInt(e.target.value))}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>}
+
                         <div className="editor-section">
                             <h2>Fleas</h2>
                             <h3>Saved Fleas</h3>
@@ -304,7 +362,25 @@ class App extends React.Component {
                             </div>
                         </div>
 
-                        <div className="editor-section"><h2>Relics</h2><p className="note">Relic editing features are coming soon.</p></div>
+                        {/* GUARD CLAUSE: Only render if Relic data exists */}
+                        {pd.Relics && pd.Relics.savedData && <div className="editor-section">
+                            <h2>Relics</h2>
+                            <div className="form-grid">
+                                {pd.Relics.savedData.map((relic, index) => (
+                                    <div key={relic.Name} className="quest-item-group">
+                                        <div className="quest-name">{relic.Name.replace(/_/g, ' ')}</div>
+                                        <div className="quest-controls">
+                                            <div className="quest-radios">
+                                                <label><input type="radio" name={`relic-${index}`} value="none" checked={this.getRelicStatus(relic.Data) === "none"} onChange={() => this.handleRelicChange(index, "none")} /> None</label>
+                                                <label><input type="radio" name={`relic-${index}`} value="collected" checked={this.getRelicStatus(relic.Data) === "collected"} onChange={() => this.handleRelicChange(index, "collected")} /> Collected</label>
+                                                <label><input type="radio" name={`relic-${index}`} value="deposited" checked={this.getRelicStatus(relic.Data) === "deposited"} onChange={() => this.handleRelicChange(index, "deposited")} /> Deposited</label>
+                                                <label><input type="radio" name={`relic-${index}`} value="seen" checked={this.getRelicStatus(relic.Data) === "seen"} onChange={() => this.handleRelicChange(index, "seen")} /> Seen</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>}
 
                         {/* GUARD CLAUSE: Only render if Quest data exists */}
                         {pd.QuestCompletionData && pd.QuestCompletionData.savedData && <div className="editor-section">
