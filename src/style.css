@@ -42,22 +42,6 @@ h1 {
     margin: 0 0 10px 0;
 }
 
-h2 {
-    color: var(--primary-color);
-    margin-top: 0;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-}
-
-h3 {
-    color: var(--text-muted-color);
-    margin-top: 20px;
-    margin-bottom: 10px;
-    font-weight: 500;
-    border-bottom: 1px dashed var(--border-color);
-    padding-bottom: 5px;
-}
-
 .credits {
     text-align: center;
     color: var(--text-muted-color);
@@ -103,6 +87,9 @@ h3 {
         background-color: #111;
         padding: 2px 5px;
         border-radius: 4px;
+        /* Ensures long paths wrap on small screens */
+        overflow-wrap: break-word;
+        word-break: break-all;
     }
 
 .notes {
@@ -233,31 +220,20 @@ hr {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 15px; /* Add gap for spacing */
 }
 
 .editor-section-header {
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-}
-
-.editor-subsection-header {
-    margin-top: 20px;
-    margin-bottom: 10px;
-    border-bottom: 1px dashed var(--border-color);
-    padding-bottom: 5px;
+    margin-bottom: 20px; /* Spacing below the header */
 }
 
     .editor-section-header h2,
     .editor-subsection-header h3 {
         margin: 0;
+        color: var(--primary-color);
         border: none;
         padding: 0;
     }
-
-.editor-section-header h2 {
-    color: var(--primary-color);
-}
 
 .editor-subsection-header h3 {
     color: var(--text-muted-color);
@@ -365,6 +341,7 @@ input[type="checkbox"], input[type="radio"] {
 .quest-radios {
     display: flex;
     gap: 15px;
+    flex-wrap: wrap; /* Allow radios to wrap on small screens */
 }
 
     .quest-radios label {

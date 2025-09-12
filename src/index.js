@@ -145,10 +145,12 @@ class App extends React.Component {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
             const relicData = newState.playerData.Relics.savedData[relicIndex].Data;
 
+            // Reset all flags first
             relicData.IsCollected = false;
             relicData.IsDeposited = false;
             relicData.HasSeenInRelicBoard = false;
 
+            // Set flags based on the new status (cascading logic)
             if (newStatus === "collected") {
                 relicData.IsCollected = true;
             } else if (newStatus === "deposited") {
@@ -159,6 +161,7 @@ class App extends React.Component {
                 relicData.IsDeposited = true;
                 relicData.HasSeenInRelicBoard = true;
             }
+            // "none" case is handled by the initial reset
             return { saveData: newState };
         });
     }
@@ -303,7 +306,7 @@ class App extends React.Component {
                 {saveData && (
                     <div className="editor-container">
                         <div className="editor-section">
-                            <h2>Basic Stats</h2>
+                            <div className="editor-section-header"><h2>Basic Stats</h2></div>
                             <div className="form-grid">
                                 <div className="form-group"><label>Health</label><input type="number" value={pd.health} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'health')} /><span className="note">Over 11 masks can break UI.</span></div>
                                 <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
@@ -375,11 +378,11 @@ class App extends React.Component {
                                 <h2>Maps</h2>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('maps')}>Select All</button>
                             </div>
-                            <h3>Obtained Maps</h3>
+                            <div className="editor-subsection-header"><h3>Obtained Maps</h3></div>
                             <div className="form-grid">
                                 {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                             </div>
-                            <h3>Map Pins</h3>
+                            <div className="editor-subsection-header"><h3>Map Pins</h3></div>
                             <div className="form-grid">
                                 {mapPinKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('hasPin', 'Pin: '))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                             </div>
@@ -397,7 +400,7 @@ class App extends React.Component {
                         </div>
 
                         {pd.Collectables && pd.Collectables.savedData && <div className="editor-section">
-                            <h2>Collectables</h2>
+                            <div className="editor-section-header"><h2>Collectables</h2></div>
                             <div className="form-grid">
                                 {pd.Collectables.savedData.map((collectable, index) => (
                                     <div key={collectable.Name} className="form-group">
@@ -413,15 +416,15 @@ class App extends React.Component {
                         </div>}
 
                         <div className="editor-section">
-                            <h2>Fleas</h2>
+                            <div className="editor-section-header"><h2>Fleas</h2></div>
                             <div className="editor-subsection-header">
                                 <h3>Saved Fleas</h3>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('savedFleas')}>Select All</button>
                             </div>
                             <div className="form-grid">
-                                {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                                {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length).replace(/_/g, ' ')}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                             </div>
-                            <h3>Caravan & Flea Games</h3>
+                            <div className="editor-subsection-header"><h3>Caravan & Flea Games</h3></div>
                             <div className="form-grid">
                                 {fleaQuestKeys.map(key => (
                                     typeof pd[key] === 'boolean' ?
@@ -432,7 +435,7 @@ class App extends React.Component {
                         </div>
 
                         {pd.Relics && pd.Relics.savedData && <div className="editor-section">
-                            <h2>Relics</h2>
+                            <div className="editor-section-header"><h2>Relics</h2></div>
                             <div className="form-grid">
                                 {pd.Relics.savedData.map((relic, index) => (
                                     <div key={relic.Name} className="quest-item-group">
@@ -451,7 +454,7 @@ class App extends React.Component {
                         </div>}
 
                         {pd.QuestCompletionData && pd.QuestCompletionData.savedData && <div className="editor-section">
-                            <h2>Quests</h2>
+                            <div className="editor-section-header"><h2>Quests</h2></div>
                             <div className="form-grid">
                                 {pd.QuestCompletionData.savedData.map((quest, index) => (
                                     <div key={quest.Name} className="quest-item-group">
