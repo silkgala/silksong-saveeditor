@@ -474,7 +474,7 @@ class App extends React.Component {
                             <div className="form-grid">
                                 {MASTER_RELIC_LIST.map((masterRelic, masterIndex) => {
                                     const currentRelic = pd.Relics.savedData.find(r => r.Name === masterRelic.Name);
-                                    const status = this.getRelicStatus(currentRelic?.Data);
+                                    const status = this.getRelicStatus(currentRelic && currentRelic.Data);
                                     const isEnabled = !!currentRelic;
                                     return (
                                         <div key={masterRelic.Name} className={`quest-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
@@ -498,7 +498,7 @@ class App extends React.Component {
                             <div className="form-grid">
                                 {MASTER_QUEST_LIST.map((masterQuest, masterIndex) => {
                                     const currentQuest = pd.QuestCompletionData.savedData.find(q => q.Name === masterQuest.Name);
-                                    const status = this.getQuestStatus(currentQuest?.Data);
+                                    const status = this.getQuestStatus(currentQuest && currentQuest.Data);
                                     const isEnabled = !!currentQuest;
                                     const hasCount = masterQuest.Data.CompletedCount > 0 || (currentQuest && currentQuest.Data.CompletedCount > 0);
                                     return (
@@ -506,7 +506,7 @@ class App extends React.Component {
                                             <div className={`quest-name ${!isEnabled ? 'label-disabled' : ''}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterQuest.Name.replace(/_/g, ' ')}</div>
                                             <div className="quest-controls">
                                                 <div className="quest-radios">
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} onChange={() => { }} disabled={isEnabled} /> Not Encountered</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} disabled={isEnabled} /> Not Encountered</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="seen" checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="completed" checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>
