@@ -174,7 +174,6 @@ button {
         background-color: #5a5a5a;
     }
 
-/* New prominent style for the Browse button */
 .btn-browse {
     background-color: #333;
     color: var(--text-color);
@@ -260,7 +259,7 @@ input[type="number"] {
     border-radius: 4px;
     font-family: inherit;
     font-size: 1em;
-    width: 100px; /* Give number inputs a default width */
+    width: 100px;
 }
 
 .checkbox-group {
@@ -276,10 +275,8 @@ input[type="checkbox"] {
     cursor: pointer;
 }
 
-/* Special group for Tool items that have a checkbox and a number input */
 .tool-item-group {
     display: flex;
-    flex-direction: row;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
@@ -289,3 +286,18 @@ input[type="checkbox"] {
         flex-grow: 1;
         margin: 0;
     }
+
+.crest-item-group {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+
+.crest-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border-color);
+}
