@@ -1,18 +1,18 @@
 # Silksong Save Editor
-## [https://just-addwater.github.io/silksong-saveeditor/]
+## https://just-addwater.github.io/silksong-saveeditor/
 Online Silksong save file editor. 
 
-Updated version of the online save editor by [@bloodorca] /hollow:master .Decryption and encryption from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
+Updated version of the online save editor for Hollowknight by [@bloodorca](https://github.com/bloodorca/hollow) .Decryption and encryption from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
 
 
 ### Instructions 
 1. Make a backup of your save file! 
-1. Select or drag the .dat save file.
-2. Scroll down and edit
-3. Save it as user1.dat for slot one. user2.dat for slot 2 etc. 
+2. Select or drag the .dat save file.
+3. Scroll down and edit
+4. Save it as user1.dat for slot one. user2.dat for slot 2 etc. 
 
 
-### Where is my save folder?
+### Save Location
 Save File Locations
 Windows	%USERPROFILE%\AppData\LocalLow\Team Cherry\Silksong\
 Microsoft Store	%LOCALAPPDATA%\Packages\TeamCherry.Silksong_y4jvztpgccj42\SystemAppData\wgs
