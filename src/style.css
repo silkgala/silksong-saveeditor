@@ -268,7 +268,7 @@ input[type="number"] {
     gap: 10px;
 }
 
-input[type="checkbox"] {
+input[type="checkbox"], input[type="radio"] {
     width: 1.3em;
     height: 1.3em;
     accent-color: var(--primary-color);
@@ -301,3 +301,34 @@ input[type="checkbox"] {
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
 }
+
+.quest-item-group {
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+}
+
+    .quest-item-group .quest-name {
+        font-weight: 500;
+        margin-bottom: 10px;
+    }
+
+.quest-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.quest-radios {
+    display: flex;
+    gap: 15px;
+}
+
+    .quest-radios label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9em;
+    }

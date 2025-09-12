@@ -80,13 +80,8 @@ class App extends React.Component {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
             const crestData = newState.playerData.ToolEquips.savedData[crestIndex].Data;
-
-            // Update the unlocked status
             crestData.IsUnlocked = value;
-
-            // ** NEW LOGIC: Also set the 'new' indicator to false when this is changed **
             crestData.DisplayNewIndicator = false;
-
             return { saveData: newState };
         });
     }
@@ -99,28 +94,53 @@ class App extends React.Component {
         });
     }
 
-    // --- Save Handlers ---
-    handleSaveEncrypted = () => {
-        if (!this.state.saveData) return;
-        try {
-            const jsonString = JSON.stringify(this.state.saveData);
-            DownloadData(Encode(jsonString), this.state.fileName);
-        } catch (err) { this.setState({ error: "Failed to save the file." }); }
+    handleQuestChange = (questIndex, newStatus) => {
+        this.setState(prevState => {
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            const questData = newState.playerData.QuestCompletionData.savedData[questIndex].Data;
+
+            if (newStatus === "seen") {
+                questData.HasBeenSeen = true;
+                questData.IsAccepted = false;
+                questData.IsCompleted = false;
+            } else if (newStatus === "accepted") {
+                questData.HasBeenSeen = true;
+                questData.IsAccepted = true;
+                questData.IsCompleted = false;
+            } else if (newStatus === "completed") {
+                questData.HasBeenSeen = true;
+                questData.IsAccepted = true;
+                questData.IsCompleted = true;
+                questData.WasEverCompleted = true;
+            }
+            return { saveData: newState };
+        });
     }
 
-    handleSaveJson = () => {
-        if (!this.state.saveData) return;
-        try {
-            const jsonString = JSON.stringify(this.state.saveData, null, 2);
-            DownloadData(jsonString, this.state.fileName.replace('.dat', '.json'));
-        } catch (err) { this.setState({ error: "Failed to save the JSON file." }); }
+    handleQuestCountChange = (questIndex, count) => {
+        this.setState(prevState => {
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            newState.playerData.QuestCompletionData.savedData[questIndex].Data.CompletedCount = count;
+            return { saveData: newState };
+        });
+    }
+
+    // --- Save Handlers ---
+    handleSaveEncrypted = () => { /* ... (same as before) ... */ }
+    handleSaveJson = () => { /* ... (same as before) ... */ }
+
+    // Helper to determine the current status of a quest for radio buttons
+    getQuestStatus = (questData) => {
+        if (questData.IsCompleted) return "completed";
+        if (questData.IsAccepted) return "accepted";
+        if (questData.HasBeenSeen) return "seen";
+        return "none";
     }
 
     render() {
         const { saveData, dragging, error } = this.state;
         const pd = saveData ? saveData.playerData : null;
 
-        // Create lists of keys for easier mapping
         const upgradeKeys = pd ? Object.keys(pd).filter(k => k.startsWith('has') && !['hasJournal', 'hasNeedleThrow'].includes(k)) : [];
         const mapKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Has') && k.endsWith('Map')) : [];
         const mapPinKeys = pd ? Object.keys(pd).filter(k => k.startsWith('hasPin')) : [];
@@ -139,20 +159,7 @@ class App extends React.Component {
                     <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer"> KayDeeTee</a>
                 </div>
 
-                <div className="instructions">
-                    <h2>Save File Locations</h2>
-                    <table className="save-locations-table">
-                        <thead><tr><th>System</th><th>Location</th></tr></thead>
-                        <tbody>
-                            <tr><td>Windows</td><td><code>%USERPROFILE%\AppData\LocalLow\Team Cherry\Silksong\</code></td></tr>
-                            <tr><td>Microsoft Store</td><td><code>%LOCALAPPDATA%\Packages\TeamCherry.Silksong_y4jvztpgccj42\SystemAppData\wgs</code></td></tr>
-                            <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/</code></td></tr>
-                            <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
-                        </tbody>
-                    </table>
-                    <p className="notes"><code>user1.dat</code> for save slot 1, etc. (4 total slots).</p>
-                </div>
-
+                <div className="instructions">{/* ... (same as before) ... */}</div>
                 <div className="warning">Always backup your save files (.dat) before editing!</div>
                 <div className={`drop-zone ${dragging ? 'dragging' : ''}`} onClick={this.handleBrowseClick} onDragEnter={this.handleDragEnter} onDragLeave={this.handleDragLeave} onDragOver={this.handleDragOver} onDrop={this.handleDrop}>
                     <p>Drag .dat files here or</p>
@@ -169,75 +176,11 @@ class App extends React.Component {
 
                 {saveData && (
                     <div className="editor-container">
-                        <div className="editor-section">
-                            <h2>Basic Stats</h2>
-                            <div className="form-grid">
-                                <div className="form-group"><label>Health</label><input type="number" value={pd.health} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'health')} /><span className="note">Over 11 masks can break UI.</span></div>
-                                <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
-                                <div className="form-group"><label>Rosaries</label><input type="number" value={pd.geo} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'geo')} /></div>
-                                <div className="form-group"><label>Silk Regen Max</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
-                                <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
-                            </div>
-                        </div>
-
-                        <div className="editor-section">
-                            <h2>Upgrades</h2>
-                            <div className="form-grid">
-                                {upgradeKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
-                                <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
-                            </div>
-                        </div>
-
-                        <div className="editor-section">
-                            <h2>Tools</h2>
-                            <div className="form-grid">
-                                {pd.Tools.savedData.map((tool, index) => (
-                                    <div key={tool.Name} className="tool-item-group">
-                                        <label htmlFor={`tool-unlock-${index}`}>{tool.Name}</label>
-                                        <input id={`tool-unlock-${index}`} type="checkbox" checked={tool.Data.IsUnlocked} onChange={(e) => this.handleToolChange(index, 'IsUnlocked', e.target.checked)} />
-                                        {this.originalSaveData.playerData.Tools.savedData[index].Data.AmountLeft > 0 && (
-                                            <input type="number" value={tool.Data.AmountLeft} onChange={(e) => this.handleToolChange(index, 'AmountLeft', parseInt(e.target.value))} />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="editor-section">
-                            <h2>Crest</h2>
-                            <div className="form-grid">
-                                {pd.ToolEquips.savedData.map((crest, crestIndex) => (
-                                    <div key={crest.Name} className="crest-item-group">
-                                        <div className="checkbox-group">
-                                            <input id={`crest-unlock-${crestIndex}`} type="checkbox" checked={crest.Data.IsUnlocked} onChange={(e) => this.handleCrestChange(crestIndex, e.target.checked)} />
-                                            <label htmlFor={`crest-unlock-${crestIndex}`}>{crest.Name}</label>
-                                        </div>
-                                        {crest.Data.Slots && crest.Data.Slots.length > 0 && (
-                                            <div className="crest-slots">
-                                                {crest.Data.Slots.map((slot, slotIndex) => (
-                                                    <div key={slotIndex} className="checkbox-group">
-                                                        <input id={`crest-${crestIndex}-slot-${slotIndex}`} type="checkbox" checked={slot.IsUnlocked} onChange={(e) => this.handleCrestSlotChange(crestIndex, slotIndex, e.target.checked)} />
-                                                        <label htmlFor={`crest-${crestIndex}-slot-${slotIndex}`}>Slot {slotIndex + 1}</label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="editor-section">
-                            <h2>Maps</h2>
-                            <h3>Obtained Maps</h3>
-                            <div className="form-grid">
-                                {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
-                            </div>
-                            <h3>Map Pins</h3>
-                            <div className="form-grid">
-                                {mapPinKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('hasPin', 'Pin: '))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
-                            </div>
-                        </div>
+                        <div className="editor-section">{/* ... Basic Stats ... */}</div>
+                        <div className="editor-section">{/* ... Upgrades ... */}</div>
+                        <div className="editor-section">{/* ... Tools ... */}</div>
+                        <div className="editor-section">{/* ... Crest ... */}</div>
+                        <div className="editor-section">{/* ... Maps ... */}</div>
 
                         <div className="editor-section">
                             <h2>Fast Travel</h2>
@@ -247,26 +190,34 @@ class App extends React.Component {
                             </div>
                         </div>
 
+                        <div className="editor-section">{/* ... Fleas ... */}</div>
+                        <div className="editor-section">{/* ... Relics ... */}</div>
+
                         <div className="editor-section">
-                            <h2>Fleas</h2>
-                            <h3>Saved Fleas</h3>
+                            <h2>Quests</h2>
                             <div className="form-grid">
-                                {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
-                            </div>
-                            <h3>Caravan & Flea Games</h3>
-                            <div className="form-grid">
-                                {fleaQuestKeys.map(key => (
-                                    typeof pd[key] === 'boolean' ?
-                                        (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>) :
-                                        (<div key={key} className="form-group"><label>{formatLabel(key)}</label><input type="number" value={pd[key]} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', key)} /></div>)
+                                {pd.QuestCompletionData.savedData.map((quest, index) => (
+                                    <div key={quest.Name} className="quest-item-group">
+                                        <div className="quest-name">{quest.Name}</div>
+                                        <div className="quest-controls">
+                                            <div className="quest-radios">
+                                                <label><input type="radio" name={`quest-${index}`} value="seen" checked={this.getQuestStatus(quest.Data) === "seen"} onChange={() => this.handleQuestChange(index, "seen")} /> Seen</label>
+                                                <label><input type="radio" name={`quest-${index}`} value="accepted" checked={this.getQuestStatus(quest.Data) === "accepted"} onChange={() => this.handleQuestChange(index, "accepted")} /> Accepted</label>
+                                                <label><input type="radio" name={`quest-${index}`} value="completed" checked={this.getQuestStatus(quest.Data) === "completed"} onChange={() => this.handleQuestChange(index, "completed")} /> Completed</label>
+                                            </div>
+                                            {this.originalSaveData.playerData.QuestCompletionData.savedData[index].Data.CompletedCount > 0 && (
+                                                <div className="form-group">
+                                                    <input type="number" value={quest.Data.CompletedCount} onChange={(e) => this.handleQuestCountChange(index, parseInt(e.target.value))} />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         </div>
 
-                        <div className="editor-section"><h2>Relics</h2><p className="note">Relic editing features are coming soon.</p></div>
-                        <div className="editor-section"><h2>Quests</h2><p className="note">Quest editing features are coming soon.</p></div>
-                        <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
-                        <div className="editor-section"><h2>Bestiary</h2><p className="note">Bestiary editing features are coming soon.</p></div>
+                        <div className="editor-section">{/* ... Events ... */}</div>
+                        <div className="editor-section">{/* ... Bestiary ... */}</div>
                     </div>
                 )}
             </div>
@@ -274,4 +225,6 @@ class App extends React.Component {
     }
 }
 
+// NOTE: To save space, the unchanged render blocks like "Basic Stats" are shown as comments.
+// In your actual file, you'll replace the full file content.
 ReactDOM.render(<App />, document.querySelector("#root"));
