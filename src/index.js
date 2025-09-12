@@ -1,36 +1,32 @@
-import React, { Fragment } from "react"
+import React from "react"
 import ReactDOM from "react-dom"
 import { Encode, Decode, DownloadData } from "./functions.js"
 import "./style.css"
+
+// Helper function to format camelCase keys into readable labels
+const formatLabel = (key) => {
+    // Add space before capital letters, then capitalize the first letter
+    return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+};
 
 class App extends React.Component {
     constructor() {
         super()
         this.fileInputRef = React.createRef()
+        this.originalSaveData = null; // Store the original unmodified save data
     }
 
     state = {
-        saveData: null, // This will hold the parsed JSON object
+        saveData: null,
         fileName: "",
         dragging: false,
         error: null
     }
 
     // --- Drag and Drop Handlers ---
-    handleDragEnter = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.setState({ dragging: true });
-    };
-    handleDragLeave = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.setState({ dragging: false });
-    };
-    handleDragOver = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-    };
+    handleDragEnter = (e) => { e.preventDefault(); e.stopPropagation(); this.setState({ dragging: true }); };
+    handleDragLeave = (e) => { e.preventDefault(); e.stopPropagation(); this.setState({ dragging: false }); };
+    handleDragOver = (e) => { e.preventDefault(); e.stopPropagation(); };
     handleDrop = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -40,21 +36,15 @@ class App extends React.Component {
     };
 
     // --- File Handling ---
-    handleBrowseClick = () => {
-        this.fileInputRef.current.click();
-    };
-
+    handleBrowseClick = () => { this.fileInputRef.current.click(); };
     handleFileSelect = (e) => {
         const file = e.target.files[0];
         this.handleFile(file);
-        e.target.value = null; // Reset input for re-uploading the same file
+        e.target.value = null;
     }
 
     handleFile = (file) => {
-        if (!file) return;
-
-        // Validation: Check for .dat extension
-        if (!file.name.toLowerCase().endsWith('.dat')) {
+        if (!file || !file.name.toLowerCase().endsWith('.dat')) {
             this.setState({ error: "Invalid file type. Please upload a .dat file." });
             return;
         }
@@ -63,54 +53,48 @@ class App extends React.Component {
         reader.readAsArrayBuffer(file);
         reader.onload = () => {
             try {
-                const result = reader.result;
-                const decrypted = Decode(new Uint8Array(result));
+                const decrypted = Decode(new Uint8Array(reader.result));
                 const parsedData = JSON.parse(decrypted);
+                this.originalSaveData = JSON.parse(decrypted); // Store a pristine copy
 
-                this.setState({
-                    saveData: parsedData,
-                    fileName: file.name,
-                    error: null
-                });
+                this.setState({ saveData: parsedData, fileName: file.name, error: null });
             } catch (err) {
                 console.error("Decryption failed:", err);
-                this.setState({ error: "File decryption failed. The file may be corrupt or not a valid Silksong save." });
+                this.setState({ error: "File decryption failed. May be corrupt or not a valid save." });
             }
         };
     }
 
     // --- Editor Field Handlers ---
-    handleNumericChange = (e, ...keys) => {
-        const value = parseInt(e.target.value, 10) || 0;
+    handleNestedChange = (value, ...keys) => {
         this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState));
-            let current = newState.saveData;
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            let current = newState;
             for (let i = 0; i < keys.length - 1; i++) {
                 current = current[keys[i]];
             }
             current[keys[keys.length - 1]] = value;
 
-            if (keys.includes('health')) {
-                newState.saveData.playerData.maxHealth = value;
-            }
-            if (keys.includes('silk')) {
-                newState.saveData.playerData.silkMax = value;
-            }
+            // Special cases
+            if (keys.includes('health')) newState.playerData.maxHealth = value;
+            if (keys.includes('silk')) newState.playerData.silkMax = value;
 
-            return { saveData: newState.saveData };
+            return { saveData: newState };
         });
     }
 
-    handleCheckboxChange = (e, ...keys) => {
-        const value = e.target.checked;
+    handleToolChange = (index, field, value) => {
         this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState));
-            let current = newState.saveData;
-            for (let i = 0; i < keys.length - 1; i++) {
-                current = current[keys[i]];
+            const newState = JSON.parse(JSON.stringify(prevState.saveData));
+            const tool = newState.playerData.Tools.savedData[index];
+            tool.Data[field] = value;
+
+            // If unlocking a tool, also mark it as seen
+            if (field === 'IsUnlocked' && value === true) {
+                tool.Data.HasBeenSeen = true;
             }
-            current[keys[keys.length - 1]] = value;
-            return { saveData: newState.saveData };
+
+            return { saveData: newState };
         });
     }
 
@@ -122,7 +106,6 @@ class App extends React.Component {
             const encrypted = Encode(jsonString);
             DownloadData(encrypted, this.state.fileName);
         } catch (err) {
-            console.error("Encryption/Save failed:", err);
             this.setState({ error: "Failed to save the file." });
         }
     }
@@ -134,7 +117,6 @@ class App extends React.Component {
             const newFileName = this.state.fileName.replace('.dat', '.json');
             DownloadData(jsonString, newFileName);
         } catch (err) {
-            console.error("JSON save failed:", err);
             this.setState({ error: "Failed to save the JSON file." });
         }
     }
@@ -143,6 +125,13 @@ class App extends React.Component {
         const { saveData, dragging, error } = this.state;
         const pd = saveData ? saveData.playerData : null;
 
+        // Create lists of keys for easier mapping
+        const upgradeKeys = pd ? Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal') : [];
+        const mapKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Has') && k.endsWith('Map')) : [];
+        const mapPinKeys = pd ? Object.keys(pd).filter(k => k.startsWith('hasPin')) : [];
+        const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
+        const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
+
         return (
             <div id="wrapper">
                 <h1>Silksong Save Editor</h1>
@@ -150,19 +139,14 @@ class App extends React.Component {
                     <a href="https://github.com/just-addwater/silksong-saveeditor" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
                     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
                     Credit to:
-                    <a href="https://github.com/bloodorca/hollow" target="_blank" rel="noopener noreferrer">Bloodorca</a> &
-                    <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer">KayDeeTee</a>
+                    <a href="https://github.com/bloodorca/hollow" target="_blank" rel="noopener noreferrer"> Bloodorca</a> &
+                    <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer"> KayDeeTee</a>
                 </div>
 
                 <div className="instructions">
                     <h2>Save File Locations</h2>
                     <table className="save-locations-table">
-                        <thead>
-                            <tr>
-                                <th>System</th>
-                                <th>Location</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>System</th><th>Location</th></tr></thead>
                         <tbody>
                             <tr><td>Windows</td><td><code>%USERPROFILE%\AppData\LocalLow\Team Cherry\Silksong\</code></td></tr>
                             <tr><td>Microsoft Store</td><td><code>%LOCALAPPDATA%\Packages\TeamCherry.Silksong_y4jvztpgccj42\SystemAppData\wgs</code></td></tr>
@@ -170,29 +154,20 @@ class App extends React.Component {
                             <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
                         </tbody>
                     </table>
-                    <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
-                    <p className="notes"><code>user1.dat</code> for save slot 1. <code>user2.dat</code> for slot 2. 4 total save slots.</p>
+                    <p className="notes">For Steam, user saves are in a sub-folder of their Steam ID. For non-Steam, they're in a default sub-folder.</p>
+                    <p className="notes"><code>user1.dat</code> for slot 1, <code>user2.dat</code> for slot 2, etc. (4 total slots).</p>
                 </div>
 
                 <div className="warning">Always backup your save files (.dat) before editing!</div>
 
-                <div
-                    className={`drop-zone ${dragging ? 'dragging' : ''}`}
-                    onClick={this.handleBrowseClick}
-                    onDragEnter={this.handleDragEnter}
-                    onDragLeave={this.handleDragLeave}
-                    onDragOver={this.handleDragOver}
-                    onDrop={this.handleDrop}
-                >
+                <div className={`drop-zone ${dragging ? 'dragging' : ''}`} onClick={this.handleBrowseClick} onDragEnter={this.handleDragEnter} onDragLeave={this.handleDragLeave} onDragOver={this.handleDragOver} onDrop={this.handleDrop}>
                     <p>Drag .dat files here or</p>
-                    <button className="btn-secondary">Browse Files</button>
+                    <button className="btn-browse">Browse Files</button>
                     {error && <p className="error-message">{error}</p>}
                 </div>
 
                 <input id="file-input" type="file" accept=".dat" ref={this.fileInputRef} onChange={this.handleFileSelect} />
-
                 <hr />
-
                 <div className="save-buttons">
                     <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData}>Save .json</button>
                     <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData}>Save Encrypted .dat</button>
@@ -200,89 +175,78 @@ class App extends React.Component {
 
                 {saveData && (
                     <div className="editor-container">
-                        {/* --- BASIC STATS --- */}
                         <div className="editor-section">
                             <h2>Basic Stats</h2>
                             <div className="form-grid">
-                                <div className="form-group">
-                                    <label htmlFor="health">Health</label>
-                                    <input id="health" type="number" value={pd.health} onChange={(e) => this.handleNumericChange(e, 'playerData', 'health')} />
-                                    <span className="note">Over 11 masks can break the UI.</span>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="silk">Silk</label>
-                                    <input id="silk" type="number" value={pd.silk} onChange={(e) => this.handleNumericChange(e, 'playerData', 'silk')} />
-                                    <span className="note">Max 17.</span>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="rosaries">Rosaries</label>
-                                    <input id="rosaries" type="number" value={pd.geo} onChange={(e) => this.handleNumericChange(e, 'playerData', 'geo')} />
-                                </div>
+                                <div className="form-group"><label>Health</label><input type="number" value={pd.health} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'health')} /><span className="note">Over 11 masks can break UI.</span></div>
+                                <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
+                                <div className="form-group"><label>Rosaries</label><input type="number" value={pd.geo} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'geo')} /></div>
+                                <div className="form-group"><label>Silk Regen Max</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
                             </div>
                         </div>
 
-                        {/* --- UPGRADES --- */}
                         <div className="editor-section">
-                            <h2>Upgrades <span className="note">(Warning: Spoilers)</span></h2>
+                            <h2>Upgrades</h2>
                             <div className="form-grid">
-                                <div className="form-group">
-                                    <label htmlFor="nailUpgrades">Needle Upgrades</label>
-                                    <input id="nailUpgrades" type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNumericChange(e, 'playerData', 'nailUpgrades')} />
-                                    <span className="note">Value from 0 to 4.</span>
-                                </div>
-                                <div className="form-group">
-                                    <label htmlFor="hasNeedleThrow">Has Needle Throw</label>
-                                    <div className="checkbox-group">
-                                        <input id="hasNeedleThrow" type="checkbox" checked={pd.hasNeedleThrow} onChange={(e) => this.handleCheckboxChange(e, 'playerData', 'hasNeedleThrow')} />
-                                    </div>
-                                </div>
+                                {upgradeKeys.map(key => (
+                                    <div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>
+                                ))}
+                                <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
+                                <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
                             </div>
                         </div>
 
-                        {/* --- TOOLS --- */}
                         <div className="editor-section">
                             <h2>Tools</h2>
-                            <p className="note">Tool editing features are coming soon.</p>
+                            <div className="form-grid">
+                                {pd.Tools.savedData.map((tool, index) => (
+                                    <div key={tool.Name} className="tool-item-group">
+                                        <label htmlFor={`tool-${index}`}>{tool.Name}</label>
+                                        <input id={`tool-unlock-${index}`} type="checkbox" checked={tool.Data.IsUnlocked} onChange={(e) => this.handleToolChange(index, 'IsUnlocked', e.target.checked)} />
+                                        {this.originalSaveData.playerData.Tools.savedData[index].Data.AmountLeft > 0 && (
+                                            <input type="number" value={tool.Data.AmountLeft} onChange={(e) => this.handleToolChange(index, 'AmountLeft', parseInt(e.target.value))} />
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
                         </div>
 
-                        {/* --- FAST TRAVEL --- */}
+                        <div className="editor-section"><h2>Crest</h2><p className="note">Crest editing features are coming soon.</p></div>
+
                         <div className="editor-section">
-                            <h2>Fast Travel</h2>
-                            <p className="note">Fast Travel editing features are coming soon.</p>
+                            <h2>Maps</h2>
+                            <h3>Obtained Maps</h3>
+                            <div className="form-grid">
+                                {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            </div>
+                            <h3>Map Pins</h3>
+                            <div className="form-grid">
+                                {mapPinKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('hasPin', 'Pin: '))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            </div>
                         </div>
 
-                        {/* --- FLEAS --- */}
+                        <div className="editor-section"><h2>Fast Travel</h2><p className="note">Fast Travel editing features are coming soon.</p></div>
+
                         <div className="editor-section">
                             <h2>Fleas</h2>
-                            <p className="note">Flea editing features are coming soon.</p>
+                            <h3>Saved Fleas</h3>
+                            <div className="form-grid">
+                                {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            </div>
+                            <h3>Caravan & Flea Games</h3>
+                            <div className="form-grid">
+                                {fleaQuestKeys.map(key => (
+                                    typeof pd[key] === 'boolean' ?
+                                        (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>) :
+                                        (<div key={key} className="form-group"><label>{formatLabel(key)}</label><input type="number" value={pd[key]} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', key)} /></div>)
+                                ))}
+                            </div>
                         </div>
 
-                        {/* --- EVENTS --- */}
-                        <div className="editor-section">
-                            <h2>Events</h2>
-                            <h3>Bosses</h3>
-                            <p className="note">Boss event editing features are coming soon.</p>
-                            <h3>World Events</h3>
-                            <p className="note">World event editing features are coming soon.</p>
-                        </div>
-
-                        {/* --- QUESTS --- */}
-                        <div className="editor-section">
-                            <h2>Quests</h2>
-                            <p className="note">Quest editing features are coming soon.</p>
-                        </div>
-
-                        {/* --- RELICS --- */}
-                        <div className="editor-section">
-                            <h2>Relics</h2>
-                            <p className="note">Relic editing features are coming soon.</p>
-                        </div>
-
-                        {/* --- BESTIARY --- */}
-                        <div className="editor-section">
-                            <h2>Bestiary</h2>
-                            <p className="note">Bestiary editing features are coming soon.</p>
-                        </div>
+                        <div className="editor-section"><h2>Relics</h2><p className="note">Relic editing features are coming soon.</p></div>
+                        <div className="editor-section"><h2>Quests</h2><p className="note">Quest editing features are coming soon.</p></div>
+                        <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
+                        <div className="editor-section"><h2>Bestiary</h2><p className="note">Bestiary editing features are coming soon.</p></div>
                     </div>
                 )}
             </div>
