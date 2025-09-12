@@ -1,8 +1,8 @@
 # Silksong Save Editor
-## [(https://just-addwater.github.io/silksong-saveeditor/)]
+## [https://just-addwater.github.io/silksong-saveeditor/]
 Online Silksong save file editor. 
 
-Updated version of the online save editor by [@bloodorca] /hollow:masterThe steps behind decryption and encryption were taken from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
+Updated version of the online save editor by [@bloodorca] /hollow:master .Decryption and encryption from [@KayDeeTee](https://github.com/KayDeeTee)'s [Hollow Knight Save Manager](https://github.com/KayDeeTee/Hollow-Knight-SaveManager). 
 
 
 ### Instructions 
