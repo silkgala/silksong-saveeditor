@@ -70,8 +70,13 @@ class App extends React.Component {
             current[lastKey] = value;
 
             // Sync logic
-            if (lastKey === 'health') newState.playerData.maxHealth = value;
-            if (lastKey === 'silk') newState.playerData.silkMax = value;
+            if (lastKey === 'health') {
+                newState.playerData.maxHealth = value;
+                newState.playerData.maxHealthBase = value;
+            }
+            if (lastKey === 'silk') {
+                newState.playerData.silkMax = value;
+            }
 
             return { saveData: newState };
         });
@@ -352,6 +357,8 @@ class App extends React.Component {
                                 <div className="form-group"><label>Shell Shards</label><input type="number" value={pd.ShellShards} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'ShellShards')} /></div>
                                 <div className="form-group"><label>Completion %</label><input type="number" value={pd.completionPercentage} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'completionPercentage')} /></div>
                                 <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
+                                <div className="form-group"><label>Silk Regen Max</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
+                                <div className="form-group"><label>Silk Spool Broken</label><div className="checkbox-group"><input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} /></div></div>
                             </div>
                         </div>
 
