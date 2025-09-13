@@ -106,6 +106,7 @@ class App extends React.Component {
         });
     }
 
+    // Handles enabling/disabling a collectable or changing its value
     handleCollectableChange = (masterIndex, value, isEnabling) => {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
@@ -374,10 +375,11 @@ class App extends React.Component {
                                 {MASTER_TOOL_LIST.map((masterTool, masterIndex) => {
                                     const currentTool = pd.Tools.savedData.find(t => t.Name === masterTool.Name);
                                     const isEnabled = !!currentTool;
+                                    const isUnlocked = isEnabled && currentTool.Data.IsUnlocked;
                                     const hasAmount = masterTool.Data.AmountLeft > 0;
                                     return (
-                                        <div key={masterTool.Name} className={`tool-item-group`}>
-                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isEnabled && currentTool.Data.IsUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
+                                        <div key={masterTool.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
+                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
                                             <label htmlFor={`tool-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterTool.Name}</label>
                                             {hasAmount && (
                                                 <input type="number" disabled={!isEnabled} value={isEnabled ? currentTool.Data.AmountLeft : ''} onChange={(e) => this.handleToolChange(masterIndex, 'AmountLeft', parseInt(e.target.value))} />
@@ -411,7 +413,13 @@ class App extends React.Component {
                                                 <div className="crest-slots">
                                                     {masterCrest.Data.Slots.map((slot, slotIndex) => (
                                                         <div key={slotIndex} className="checkbox-group">
-                                                            <input id={`crest-${masterIndex}-slot-${slotIndex}`} type="checkbox" disabled={!isEnabled} checked={isEnabled && currentCrest.Data.Slots[slotIndex].IsUnlocked} onChange={(e) => this.handleCrestSlotChange(masterIndex, slotIndex, e.target.checked)} />
+                                                            <input
+                                                                id={`crest-${masterIndex}-slot-${slotIndex}`}
+                                                                type="checkbox"
+                                                                disabled={!isEnabled}
+                                                                checked={isEnabled && currentCrest.Data.Slots && currentCrest.Data.Slots[slotIndex] && currentCrest.Data.Slots[slotIndex].IsUnlocked}
+                                                                onChange={(e) => this.handleCrestSlotChange(masterIndex, slotIndex, e.target.checked)}
+                                                            />
                                                             <label htmlFor={`crest-${masterIndex}-slot-${slotIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>Slot {slotIndex + 1}</label>
                                                         </div>
                                                     ))}
