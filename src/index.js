@@ -1,7 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import { Encode, Decode, DownloadData } from "./functions.js"
-import { MASTER_TOOL_LIST, MASTER_COLLECTABLE_LIST, MASTER_RELIC_LIST, MASTER_QUEST_LIST, MASTER_CREST_LIST } from "./masterLists.js";
+import { MASTER_TOOL_LIST, MASTER_COLLECTABLE_LIST, MASTER_RELIC_LIST, MASTER_QUEST_LIST, MASTER_CREST_LIST, MASTER_JOURNAL_LIST } from "./masterLists.js";
 import "./style.css"
 
 const formatLabel = (key) => {
@@ -190,13 +190,57 @@ class App extends React.Component {
             const relicData = relic.Data;
             relicData.IsCollected = false;
             relicData.IsDeposited = false;
-            relicData.HasSeenInRelicBoard = false;
+            relicData.HasBeenSeenInRelicBoard = false;
             if (newStatus === "collected") relicData.IsCollected = true;
             else if (newStatus === "deposited") { relicData.IsCollected = true; relicData.IsDeposited = true; }
             else if (newStatus === "seen") { relicData.IsCollected = true; relicData.IsDeposited = true; relicData.HasSeenInRelicBoard = true; }
         }
         this.updateJsonTextFromState(newState);
     }
+
+    ensureJournalEntryExists = (newState, masterIndex) => {
+        const pd = newState.playerData;
+        const masterEntry = MASTER_JOURNAL_LIST[masterIndex];
+
+        if (!pd.EnemyJournalKillData) pd.EnemyJournalKillData = { list: [] };
+        if (!pd.EnemyJournalKillData.list) pd.EnemyJournalKillData.list = [];
+
+        let entry = pd.EnemyJournalKillData.list.find(x => x.Name === masterEntry.Name);
+        if (!entry) {
+            const newEntry = JSON.parse(JSON.stringify(masterEntry));
+            pd.EnemyJournalKillData.list.push(newEntry);
+            entry = pd.EnemyJournalKillData.list.find(x => x.Name === masterEntry.Name);
+        }
+        return entry;
+    };
+
+    handleJournalEntryChange = (masterIndex, hasBeenSeen) => {
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const entry = this.ensureJournalEntryExists(newState, masterIndex);
+
+        entry.Record.HasBeenSeen = hasBeenSeen;
+        if (hasBeenSeen && entry.Record.Kills < 1) {
+            entry.Record.Kills = 1;
+        } else if (!hasBeenSeen) {
+            entry.Record.Kills = 0;
+        }
+
+        this.updateJsonTextFromState(newState);
+    };
+
+    handleJournalKillsChange = (masterIndex, kills) => {
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const entry = this.ensureJournalEntryExists(newState, masterIndex);
+
+        let newKills = parseInt(kills, 10);
+        if (isNaN(newKills)) newKills = 1;
+        if (entry.Record.HasBeenSeen && newKills < 1) {
+            newKills = 1;
+        }
+
+        entry.Record.Kills = newKills;
+        this.updateJsonTextFromState(newState);
+    };
 
     // --- JSON Editor Handlers ---
     handleJsonTextChange = (e) => {
@@ -295,7 +339,8 @@ class App extends React.Component {
         const upgradeKeys = pd ? Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal' && !k.startsWith('hasPin') && !k.startsWith('hasMarker')) : [];
         const mapKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Has') && k.endsWith('Map')) : [];
         const mapPinAndMarkerKeys = pd ? Object.keys(pd).filter(k => k.startsWith('hasPin') || k.startsWith('hasMarker')) : [];
-        const fastTravelKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Unlocked') || k === 'bellCentipedeAppeared') : [];
+        const fastTravelTopKeys = pd ? Object.keys(pd).filter(k => k === 'UnlockedFastTravel' || k === 'UnlockedFastTravelTeleport') : [];
+        const fastTravelOtherKeys = pd ? Object.keys(pd).filter(k => (k.startsWith('Unlocked') && !fastTravelTopKeys.includes(k)) || k === 'bellCentipedeAppeared') : [];
         const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
         const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
 
@@ -366,6 +411,8 @@ class App extends React.Component {
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('upgrades')}>Select All</button>
                             </div>
                             <div className="form-grid">
+                                <div className="form-group"><label>Heart Pieces</label><input type="number" value={pd.heartPieces} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'heartPieces')} /></div>
+                                <div className="form-group"><label>Silk Spool Parts</label><input type="number" value={pd.silkSpoolParts} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkSpoolParts')} /></div>
                                 {upgradeKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                                 <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
                                 <div className="form-group"><label>Silk Spool Broken</label><div className="checkbox-group"><input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} /></div><span className="note">Blocks silk at the start of the game.</span></div>
@@ -461,8 +508,19 @@ class App extends React.Component {
                                 <h2>Fast Travel</h2>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('fastTravel')}>Select All</button>
                             </div>
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '20px' }}>
+                                {fastTravelTopKeys.map(key => (
+                                    <div key={key} className="form-group">
+                                        <label>{formatLabel(key)}</label>
+                                        <div className="checkbox-group">
+                                            <input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <hr />
                             <div className="form-grid">
-                                {fastTravelKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                                {fastTravelOtherKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                                 <div className="form-group"><label>Fast Travel NPC Location</label><input type="number" value={pd.FastTravelNPCLocation} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'FastTravelNPCLocation')} /></div>
                             </div>
                         </div>
@@ -558,7 +616,29 @@ class App extends React.Component {
                         </div>}
 
                         <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
-                        <div className="editor-section"><h2>Bestiary</h2><p className="note">Bestiary editing features are coming soon.</p></div>
+
+                        {pd.EnemyJournalKillData && <div className="editor-section">
+                            <div className="editor-section-header"><h2>Bestiary</h2></div>
+                            <h3>Journal</h3>
+                            <div className="form-grid">
+                                <div className="form-group"><label>Has Journal</label><div className="checkbox-group"><input type="checkbox" checked={pd.hasJournal} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'hasJournal')} /></div></div>
+                            </div>
+                            <h3>List</h3>
+                            <div className="form-grid">
+                                {MASTER_JOURNAL_LIST.map((masterEntry, masterIndex) => {
+                                    const currentEntry = pd.EnemyJournalKillData.list.find(e => e.Name === masterEntry.Name);
+                                    const isEnabled = !!currentEntry && currentEntry.Record.HasBeenSeen;
+                                    const kills = currentEntry ? currentEntry.Record.Kills : 0;
+                                    return (
+                                        <div key={masterEntry.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
+                                            <input id={`journal-enable-${masterIndex}`} type="checkbox" checked={isEnabled} onChange={(e) => this.handleJournalEntryChange(masterIndex, e.target.checked)} />
+                                            <label htmlFor={`journal-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterEntry.Name}</label>
+                                            <input type="number" disabled={!isEnabled} value={isEnabled ? kills : ''} onChange={(e) => this.handleJournalKillsChange(masterIndex, e.target.value)} />
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>}
 
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>JSON</h2></div>
