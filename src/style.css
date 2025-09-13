@@ -98,6 +98,11 @@ h1 {
     margin: 5px 0;
 }
 
+.important-note {
+    color: var(--text-color);
+    font-size: 1em;
+}
+
 .warning {
     text-align: center;
     font-weight: bold;

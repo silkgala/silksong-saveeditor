@@ -320,6 +320,36 @@ class App extends React.Component {
         return "none";
     }
 
+    // A helper function to render a list of event keys
+    renderEventInputs = (keys) => {
+        if (!this.state.saveData) return null;
+        const pd = this.state.saveData.playerData;
+        return keys.map(key => {
+            if (pd[key] === undefined) return null; // Don't render if the key doesn't exist in the save
+            const value = pd[key];
+            const label = formatLabel(key);
+
+            if (typeof value === 'boolean') {
+                return (
+                    <div key={key} className="form-group">
+                        <label>{label}</label>
+                        <div className="checkbox-group">
+                            <input type="checkbox" checked={value} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
+                        </div>
+                    </div>
+                );
+            } else if (typeof value === 'number') {
+                return (
+                    <div key={key} className="form-group">
+                        <label>{label}</label>
+                        <input type="number" value={value} onChange={(e) => this.handleNestedChange(parseInt(e.target.value) || 0, 'playerData', key)} />
+                    </div>
+                );
+            }
+            return null;
+        }).filter(Boolean); // Filter out nulls for keys that weren't found or aren't bool/num
+    };
+
     render() {
         const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError } = this.state;
         const pd = saveData ? saveData.playerData : null;
@@ -338,6 +368,61 @@ class App extends React.Component {
             jsonDisplayString = jsonText.split('\n').filter(line => line.toLowerCase().includes(jsonSearchTerm.toLowerCase())).join('\n');
         }
 
+        // --- Event Keys ---
+        const bossList = [
+            { name: 'Moss Mother', encounteredKey: 'encounteredMossMother', defeatedKey: 'defeatedMossMother' },
+            { name: 'Moss Evolver', encounteredKey: 'wokeMossEvolver', defeatedKey: 'defeatedMossEvolver' },
+            { name: 'Bonetown Boss', encounteredKey: 'EncounteredBonetownBoss', defeatedKey: 'DefeatedBonetownBoss' },
+            { name: 'Skull King', encounteredKey: 'skullKingAwake', defeatedKey: 'skullKingDefeated' },
+            { name: 'Bell Beast', encounteredKey: 'encounteredBellBeast', defeatedKey: 'defeatedBellBeast' },
+            { name: 'Ant Queen', defeatedKey: 'defeatedAntQueen' },
+            { name: 'Lace (First)', encounteredKey: 'encounteredLace1', defeatedKey: 'defeatedLace1' },
+            { name: 'Song Golem', encounteredKey: 'encounteredSongGolem', defeatedKey: 'defeatedSongGolem' },
+            { name: 'Dock Foremen', encounteredKey: 'encounteredDockForemen', defeatedKey: 'defeatedDockForemen' },
+            { name: 'Bone Flyer Giant', defeatedKey: 'defeatedBoneFlyerGiant' },
+            { name: 'Ant Trapper', encounteredKey: 'encounteredAntTrapper', defeatedKey: 'defeatedAntTrapper' },
+            { name: 'Vampire Gnat', encounteredKey: 'encounteredVampireGnatBoss', defeatedKey: 'defeatedVampireGnatBoss' },
+            { name: 'Crow Court', encounteredKey: 'encounteredCrowCourt', defeatedKey: 'defeatedCrowCourt' },
+            { name: 'Wisp Pyre Effigy', defeatedKey: 'defeatedWispPyreEffigy' },
+            { name: 'Roof Crab', encounteredKey: 'roofCrabEncountered', defeatedKey: 'roofCrabDefeated' },
+            { name: 'Spinner', encounteredKey: 'encounteredSpinner', defeatedKey: 'spinnerDefeated' },
+            { name: 'Splinter Queen', encounteredKey: 'encounteredSplinterQueen', defeatedKey: 'defeatedSplinterQueen' },
+            { name: 'Seth', encounteredKey: 'encounteredSeth', defeatedKey: 'defeatedSeth' },
+            { name: 'Flower Queen', encounteredKey: 'encounteredFlowerQueen', defeatedKey: 'defeatedFlowerQueen' },
+            { name: 'Roachkeeper Chef', defeatedKey: 'defeatedRoachkeeperChef' },
+            { name: 'Phantom', encounteredKey: 'encounteredPhantom', defeatedKey: 'defeatedPhantom' },
+            { name: 'Swamp Shaman', defeatedKey: 'DefeatedSwampShaman' },
+            { name: 'Coral Drillers', encounteredKey: 'encounteredCoralDrillers', defeatedKey: 'defeatedCoralDrillers' },
+            { name: 'Coral King', encounteredKey: 'encounteredCoralKing', defeatedKey: 'defeatedCoralKing' },
+            { name: 'Last Judge', encounteredKey: 'encounteredLastJudge', defeatedKey: 'defeatedLastJudge' },
+            { name: 'First Weaver', encounteredKey: 'encounteredFirstWeaver', defeatedKey: 'defeatedFirstWeaver' },
+            { name: 'Brood Mother', defeatedKey: 'defeatedBroodMother' },
+            { name: 'Trobbio', encounteredKey: 'encounteredTrobbio', defeatedKey: 'defeatedTrobbio' },
+            { name: 'Tormented Trobbio', encounteredKey: 'encounteredTormentedTrobbio', defeatedKey: 'defeatedTormentedTrobbio' },
+            { name: 'Cogwork Dancers', encounteredKey: 'encounteredCogworkDancers', defeatedKey: 'defeatedCogworkDancers' },
+            { name: 'Lace (Tower)', encounteredKey: 'encounteredLaceTower', defeatedKey: 'defeatedLaceTower' },
+            { name: 'Ward Boss', encounteredKey: 'wardBossEncountered', defeatedKey: 'wardBossDefeated' },
+            { name: 'Song Chevalier', encounteredKey: 'encounteredSongChevalierBoss', defeatedKey: 'defeatedSongChevalierBoss' },
+            { name: 'White Cloverstag', encounteredKey: 'encounteredWhiteCloverstag', defeatedKey: 'defeatedWhiteCloverstag' },
+            { name: 'Clover Dancers', encounteredKey: 'encounteredCloverDancers', defeatedKey: 'defeatedCloverDancers' },
+            { name: 'Lost Lace', encounteredKey: 'EncounteredLostLace' }
+        ];
+
+        const mainStoryEvents = pd ? ['completedTutorial', 'act2Started', 'blackThreadWorld', 'bindCutscenePlayed', 'completedAbyssAscent', 'act3_wokeUp', 'act3_enclaveWakeSceneCompleted', 'CompletedRedMemory', 'LastDiveCursedConvo', 'CollectedHeartFlower', 'CollectedHeartCoral', 'CollectedHeartHunter', 'CollectedHeartClover'] : [];
+        const fixerEvents = pd ? Object.keys(pd).filter(k => k.startsWith('fixer')) : [];
+        const shermaEvents = pd ? Object.keys(pd).filter(k => k.startsWith('sherma')) : [];
+        const mapperEvents = pd ? Object.keys(pd).filter(k => k.startsWith('mapper') || k.startsWith('SeenMapper') || k.startsWith('MapperLeft')) : [];
+        const garmondEvents = pd ? Object.keys(pd).filter(k => k.startsWith('garmond')) : [];
+        const nuuAndGillyEvents = pd ? Object.keys(pd).filter(k => k.startsWith('nuu') || k.startsWith('gilly') || k.startsWith('MetHalfwayHunter')) : [];
+        const bellShrineAndMemoryEvents = pd ? Object.keys(pd).filter(k => k.startsWith('bellShrine') || k.startsWith('completedMemory') || k.startsWith('chapelClosed')) : [];
+        const melodyEvents = pd ? Object.keys(pd).filter(k => k.startsWith('HasMelody') || k.startsWith('UnlockedMelody') || k.startsWith('SeenMelody') || k.startsWith('HeardMelody') || k.startsWith('Conductor')) : [];
+        const otherNpcEvents = pd ? [
+            'metDruid', 'druidTradeIntro', 'druidMossBerriesSold', 'druidAct3Intro', 'metLearnedPilgrim', 'metLearnedPilgrimAct3', 'metDicePilgrim', 'dicePilgrimDefeated', 'dicePilgrimState', 'dicePilgrimGameExplained', 'dicePilgrimBank', 'pilgrimRestMerchant_SingConvo', 'pilgrimRestMerchant_RhinoRuckusConvo', 'pilgrimRestCrowd', 'MetCrestUpgrader', 'MetCrestUpgraderAct3', 'CrestPreUpgradeTalked', 'CrestPurposeQueued', 'CrestTalkedPurpose', 'CrestUpgraderOfferedFinal', 'HasBoundCrestUpgrader', 'churchKeeperIntro', 'churchKeeperCursedConvo', 'churchKeeperBonegraveConvo', 'ChurchKeeperLeftBasement', 'learnedPilbyName', 'pilbyFriendship', 'pilbyMeetConvo', 'pilbyCampConvo', 'pilbyMosstownConvo', 'pilbyKilled', 'pilbyLeftPilgrimsRest', 'MetForgeDaughter', 'ForgeDaughterTalkState', 'PurchasedForgeToolKit', 'BallowInSauna', 'BallowMovedToDivingBell', 'BallowGivenKey', 'ForgeDaughterWhiteFlowerDlg', 'SeenDivingBellGoneAbyss', 'MetMaskMaker', 'MetMaskMakerAct3', 'MaskMakerTalkedRelationship', 'MetArchitect', 'MetArchitectAct3', 'PurchasedArchitectKey', 'ArchitectTalkedCrest', 'LibrarianAskedForRelic', 'GivenLibrarianRelic', 'LibrarianMetAct3', 'LibrarianCollectionComplete', 'MetGourmandServant', 'GotGourmandReward', 'metCaretaker', 'CaretakerOfferedSnareQuest', 'MetSeamstress', 'SeamstressOfferedQuest', 'BlueScientistMet', 'BlueScientistQuestOffered', 'BlueAssistantBloodCount', 'BlueScientistDead', 'metGrubFarmer', 'grubFarmLevel', 'metGrubFarmerAct3', 'MetGrubFarmerMimic', 'GrubFarmerSilkGrubsSold', 'metSwampMuckmen', 'MetBelltownShopkeep', 'MetBelltownGreeter', 'MetBelltownCouriers', 'PinsmithMetBelltown', 'BelltownHermitMet', 'MetBelltownBagpipers', 'MetBelltownDoctor', 'BelltownDoctorCuredCurse', 'MetBelltownRelicDealer', 'MetFisherHomeFull', 'MetPilgrimsRestShop', 'MetAntMerchant', 'SeenAntMerchantDead', 'SprintMasterCurrentRace', 'SprintMasterExtraRaceWon', 'MetPinChallengeBug', 'PinGalleryWallet'
+        ] : [];
+        const locationEvents = pd ? [
+            'BonePlazaOpened', 'bonegraveOpen', 'greatBoneGateOpened', 'crashingIntoGreymoor', 'crashedIntoGreymoor', 'hitCrowCourtSwitch', 'OpenedCrowSummonsDoor', 'PickedUpCrowMemento', 'sethLeftShellwood', 'openedDust05Gate', 'UnlockedDustCage', 'FixedDustBellBench', 'EnclaveStatePilgrimSmall', 'enclaveLevel', 'cityMerchantSaved', 'wardWoken', 'bankOpened', 'leftTheGrandForum', 'uncagedGiantFlea', 'tamedGiantFlea', 'completedSuperJumpSequence', 'fullyEnteredVerdania', 'ShamanRitualCursedConvo', 'FleaGamesStarted', 'FleaGamesEnded'
+        ] : [];
+
 
         return (
             <div id="wrapper">
@@ -347,7 +432,7 @@ class App extends React.Component {
                     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
                     Credit to:
                     <a href="https://github.com/bloodorca/hollow" target="_blank" rel="noopener noreferrer"> Bloodorca</a> &
-                    <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer"> KayDeeTee</a>
+                    <a href="https://github.com/KayDeeTee/Hollow-Knight-SaveManager" target="_blank" rel="noopener noreferrer"> KayDeeTee</a> & justaddwater
                 </div>
 
                 <div className="instructions">
@@ -358,7 +443,7 @@ class App extends React.Component {
                         <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/</code></td></tr>
                         <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
                     </tbody></table>
-                    <p className="notes"><strong><code>user1.dat</code> for save slot 1, etc. (4 total slots).</strong></p>
+                    <p className="notes important-note">user1.dat for save slot 1, user2.dat for save slot 2 etc (Up to 4 slots). Please select one of these files then scroll down and edit it. Save it as the same name or a different save slot number when finished.</p>
                     <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
                 </div>
 
@@ -604,7 +689,72 @@ class App extends React.Component {
                             </div>
                         </div>}
 
-                        <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
+                        <div className="editor-section">
+                            <div className="editor-section-header"><h2>Events</h2></div>
+
+                            <div className="editor-subsection-header"><h3>Bosses</h3></div>
+                            <div className="form-grid">
+                                {bossList.map(boss => (
+                                    <div key={boss.name} className="form-group">
+                                        <label>{boss.name}</label>
+                                        <div className="checkbox-group">
+                                            {boss.encounteredKey && pd[boss.encounteredKey] !== undefined && (
+                                                <label style={{ fontSize: '0.9em' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={pd[boss.encounteredKey]}
+                                                        onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', boss.encounteredKey)}
+                                                    />
+                                                    Encountered
+                                                </label>
+                                            )}
+                                            {boss.defeatedKey && pd[boss.defeatedKey] !== undefined && (
+                                                <label style={{ fontSize: '0.9em' }}>
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={pd[boss.defeatedKey]}
+                                                        onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', boss.defeatedKey)}
+                                                    />
+                                                    Defeated
+                                                </label>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="editor-subsection-header"><h3>World Events</h3></div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Main Progression</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(mainStoryEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Bell Shrines & Memories</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(bellShrineAndMemoryEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Melodies</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(melodyEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Fixer Pilgrim</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(fixerEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Sherma</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(shermaEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Mapper</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(mapperEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Garmond</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(garmondEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Nuu & Gilly</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(nuuAndGillyEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Other NPCs & Quests</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(otherNpcEvents)}</div>
+
+                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Misc Location Events</h4></div>
+                            <div className="form-grid">{this.renderEventInputs(locationEvents)}</div>
+                        </div>
 
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Bestiary</h2></div>
