@@ -1,7 +1,7 @@
 import React from "react"
 import ReactDOM from "react-dom"
 import { Encode, Decode, DownloadData } from "./functions.js"
-import { MASTER_TOOL_LIST, MASTER_COLLECTABLE_LIST, MASTER_RELIC_LIST, MASTER_QUEST_LIST } from "./masterLists.js";
+import { MASTER_TOOL_LIST, MASTER_COLLECTABLE_LIST, MASTER_RELIC_LIST, MASTER_QUEST_LIST, MASTER_CREST_LIST } from "./masterLists.js";
 import "./style.css"
 
 const formatLabel = (key) => {
@@ -122,20 +122,21 @@ class App extends React.Component {
         });
     }
 
-    handleCrestChange = (crestIndex, value) => {
+    handleCrestChange = (masterIndex, value) => {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const crestData = newState.playerData.ToolEquips.savedData[crestIndex].Data;
-            crestData.IsUnlocked = value;
-            crestData.DisplayNewIndicator = false;
+            const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
+            crest.Data.IsUnlocked = value;
+            crest.Data.DisplayNewIndicator = false;
             return { saveData: newState };
         });
     }
 
-    handleCrestSlotChange = (crestIndex, slotIndex, value) => {
+    handleCrestSlotChange = (masterIndex, slotIndex, value) => {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            newState.playerData.ToolEquips.savedData[crestIndex].Data.Slots[slotIndex].IsUnlocked = value;
+            const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
+            crest.Data.Slots[slotIndex].IsUnlocked = value;
             return { saveData: newState };
         });
     }
@@ -244,12 +245,13 @@ class App extends React.Component {
                     });
                     break;
                 case 'crest':
-                    if (pd.ToolEquips && pd.ToolEquips.savedData) {
-                        pd.ToolEquips.savedData.forEach(crest => {
-                            crest.Data.IsUnlocked = true;
-                            if (crest.Data.Slots) crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
-                        });
-                    }
+                    MASTER_CREST_LIST.forEach((masterCrest, index) => {
+                        const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, index);
+                        crest.Data.IsUnlocked = true;
+                        if (crest.Data.Slots) crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
+                    });
+                    pd.UnlockedExtraBlueSlot = true;
+                    pd.UnlockedExtraYellowSlot = true;
                     break;
                 case 'maps':
                     Object.keys(pd).filter(k => (k.startsWith('Has') && k.endsWith('Map')) || k.startsWith('hasPin') || k.startsWith('hasMarker')).forEach(key => pd[key] = true);
@@ -365,11 +367,12 @@ class App extends React.Component {
                             <div className="form-grid">
                                 {MASTER_TOOL_LIST.map((masterTool, masterIndex) => {
                                     const currentTool = pd.Tools.savedData.find(t => t.Name === masterTool.Name);
-                                    const isEnabled = !!currentTool && currentTool.Data.IsUnlocked;
+                                    const isEnabled = !!currentTool;
+                                    const isUnlocked = isEnabled && currentTool.Data.IsUnlocked;
                                     const hasAmount = masterTool.Data.AmountLeft > 0;
                                     return (
                                         <div key={masterTool.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isEnabled} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
+                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
                                             <label htmlFor={`tool-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterTool.Name}</label>
                                             {hasAmount && (
                                                 <input type="number" disabled={!isEnabled} value={isEnabled ? currentTool.Data.AmountLeft : ''} onChange={(e) => this.handleToolChange(masterIndex, 'AmountLeft', parseInt(e.target.value))} />
@@ -380,30 +383,38 @@ class App extends React.Component {
                             </div>
                         </div>}
 
-                        {pd.ToolEquips && pd.ToolEquips.savedData && <div className="editor-section">
+                        {pd.ToolEquips && <div className="editor-section">
                             <div className="editor-section-header">
                                 <h2>Crest</h2>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('crest')}>Select All</button>
                             </div>
+                            <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '20px' }}>
+                                <div className="form-group"><label>Unlocked Extra Blue Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraBlueSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraBlueSlot')} /></div></div>
+                                <div className="form-group"><label>Unlocked Extra Yellow Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraYellowSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraYellowSlot')} /></div></div>
+                            </div>
                             <div className="form-grid">
-                                {pd.ToolEquips.savedData.map((crest, crestIndex) => (
-                                    <div key={crest.Name} className="crest-item-group">
-                                        <div className="checkbox-group">
-                                            <input id={`crest-unlock-${crestIndex}`} type="checkbox" checked={crest.Data.IsUnlocked} onChange={(e) => this.handleCrestChange(crestIndex, e.target.checked)} />
-                                            <label htmlFor={`crest-unlock-${crestIndex}`}>{crest.Name}</label>
-                                        </div>
-                                        {crest.Data.Slots && crest.Data.Slots.length > 0 && (
-                                            <div className="crest-slots">
-                                                {crest.Data.Slots.map((slot, slotIndex) => (
-                                                    <div key={slotIndex} className="checkbox-group">
-                                                        <input id={`crest-${crestIndex}-slot-${slotIndex}`} type="checkbox" checked={slot.IsUnlocked} onChange={(e) => this.handleCrestSlotChange(crestIndex, slotIndex, e.target.checked)} />
-                                                        <label htmlFor={`crest-${crestIndex}-slot-${slotIndex}`}>Slot {slotIndex + 1}</label>
-                                                    </div>
-                                                ))}
+                                {MASTER_CREST_LIST.map((masterCrest, masterIndex) => {
+                                    const currentCrest = pd.ToolEquips.savedData.find(c => c.Name === masterCrest.Name);
+                                    const isEnabled = !!currentCrest;
+                                    return (
+                                        <div key={masterCrest.Name} className={`crest-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
+                                            <div className="checkbox-group">
+                                                <input id={`crest-unlock-${masterIndex}`} type="checkbox" checked={isEnabled && currentCrest.Data.IsUnlocked} onChange={(e) => this.handleCrestChange(masterIndex, e.target.checked)} />
+                                                <label htmlFor={`crest-unlock-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCrest.Name.replace(/_/g, ' ')}</label>
                                             </div>
-                                        )}
-                                    </div>
-                                ))}
+                                            {masterCrest.Data.Slots && masterCrest.Data.Slots.length > 0 && (
+                                                <div className="crest-slots">
+                                                    {masterCrest.Data.Slots.map((slot, slotIndex) => (
+                                                        <div key={slotIndex} className="checkbox-group">
+                                                            <input id={`crest-${masterIndex}-slot-${slotIndex}`} type="checkbox" disabled={!isEnabled} checked={isEnabled && currentCrest.Data.Slots[slotIndex].IsUnlocked} onChange={(e) => this.handleCrestSlotChange(masterIndex, slotIndex, e.target.checked)} />
+                                                            <label htmlFor={`crest-${masterIndex}-slot-${slotIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>Slot {slotIndex + 1}</label>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>}
 
@@ -506,7 +517,7 @@ class App extends React.Component {
                                             <div className={`quest-name ${!isEnabled ? 'label-disabled' : ''}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterQuest.Name.replace(/_/g, ' ')}</div>
                                             <div className="quest-controls">
                                                 <div className="quest-radios">
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} disabled={isEnabled} /> Not Encountered</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} onChange={() => { }} disabled={isEnabled} /> Not Encountered</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="seen" checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="completed" checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>

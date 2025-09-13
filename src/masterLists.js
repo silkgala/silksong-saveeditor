@@ -245,3 +245,16 @@ export const MASTER_QUEST_LIST = [
     { "Name": "Song Knight", "Data": { "HasBeenSeen": false, "IsAccepted": false, "CompletedCount": 0, "IsCompleted": false, "WasEverCompleted": false } },
     { "Name": "Courier Delivery Songclave", "Data": { "HasBeenSeen": false, "IsAccepted": false, "CompletedCount": 0, "IsCompleted": false, "WasEverCompleted": false } }
 ];
+
+export const MASTER_CREST_LIST = [
+    { "Name": "Hunter", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Reaper", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Wanderer", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Warrior", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Hunter_v2", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Toolmaster", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Cursed", "Data": { "IsUnlocked": false, "Slots": [], "DisplayNewIndicator": false } },
+    { "Name": "Witch", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Spell", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } },
+    { "Name": "Hunter_v3", "Data": { "IsUnlocked": false, "Slots": [{ "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }, { "IsUnlocked": false }], "DisplayNewIndicator": false } }
+];
