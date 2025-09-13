@@ -20,7 +20,9 @@ class App extends React.Component {
         saveData: null,
         fileName: "",
         dragging: false,
-        error: null
+        error: null,
+        jsonSearchTerm: "",
+        jsonError: null,
     }
 
     // --- Drag and Drop Handlers ---
@@ -63,11 +65,13 @@ class App extends React.Component {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
             let current = newState;
+            const lastKey = keys[keys.length - 1];
             for (let i = 0; i < keys.length - 1; i++) current = current[keys[i]];
-            current[keys[keys.length - 1]] = value;
+            current[lastKey] = value;
 
-            if (keys.includes('health')) newState.playerData.maxHealth = value;
-            if (keys.includes('silk')) newState.playerData.silkMax = value;
+            // Sync logic
+            if (lastKey === 'health') newState.playerData.maxHealth = value;
+            if (lastKey === 'silk') newState.playerData.silkMax = value;
 
             return { saveData: newState };
         });
@@ -83,10 +87,8 @@ class App extends React.Component {
 
         let item = savedDataArray.find(x => x.Name === masterItem.Name);
         if (!item) {
-            // Add a deep copy of the master item to the save data
             const newItem = JSON.parse(JSON.stringify(masterItem));
             savedDataArray.push(newItem);
-            // Re-find the item now that it has been added
             item = savedDataArray.find(x => x.Name === masterItem.Name);
         }
         return item;
@@ -104,19 +106,14 @@ class App extends React.Component {
         });
     }
 
-    // Handles enabling/disabling a collectable or changing its value
     handleCollectableChange = (masterIndex, value, isEnabling) => {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
             if (isEnabling) {
-                // This call will add the collectable if it doesn't exist
                 this.ensureItemExists(newState, 'Collectables', MASTER_COLLECTABLE_LIST, masterIndex);
             } else {
-                // If it's a value change, the item must already exist.
                 const collectable = newState.playerData.Collectables.savedData.find(c => c.Name === MASTER_COLLECTABLE_LIST[masterIndex].Name);
-                if (collectable) {
-                    collectable.Data.Amount = value;
-                }
+                if (collectable) collectable.Data.Amount = value;
             }
             return { saveData: newState };
         });
@@ -177,42 +174,40 @@ class App extends React.Component {
     handleRelicChange = (masterIndex, newStatus) => {
         this.setState(prevState => {
             const newState = JSON.parse(JSON.stringify(prevState.saveData));
-
             if (newStatus === "none") {
-                // If set to none, we just remove it from the save file if it exists
                 const masterRelic = MASTER_RELIC_LIST[masterIndex];
                 const savedDataArray = newState.playerData.Relics.savedData;
                 const itemIndex = savedDataArray.findIndex(x => x.Name === masterRelic.Name);
-                if (itemIndex > -1) {
-                    savedDataArray.splice(itemIndex, 1);
-                }
+                if (itemIndex > -1) savedDataArray.splice(itemIndex, 1);
             } else {
-                // Otherwise, ensure it exists and update its status
                 const relic = this.ensureItemExists(newState, 'Relics', MASTER_RELIC_LIST, masterIndex);
                 const relicData = relic.Data;
-
                 relicData.IsCollected = false;
                 relicData.IsDeposited = false;
                 relicData.HasSeenInRelicBoard = false;
-
-                if (newStatus === "collected") {
-                    relicData.IsCollected = true;
-                } else if (newStatus === "deposited") {
-                    relicData.IsCollected = true;
-                    relicData.IsDeposited = true;
-                } else if (newStatus === "seen") {
-                    relicData.IsCollected = true;
-                    relicData.IsDeposited = true;
-                    relicData.HasSeenInRelicBoard = true;
-                }
+                if (newStatus === "collected") relicData.IsCollected = true;
+                else if (newStatus === "deposited") { relicData.IsCollected = true; relicData.IsDeposited = true; }
+                else if (newStatus === "seen") { relicData.IsCollected = true; relicData.IsDeposited = true; relicData.HasSeenInRelicBoard = true; }
             }
             return { saveData: newState };
         });
     }
 
+    // --- JSON Editor Handlers ---
+    handleJsonTextChange = (e) => {
+        try {
+            const parsedData = JSON.parse(e.target.value);
+            this.setState({ saveData: parsedData, jsonError: null });
+        } catch (err) {
+            this.setState({ jsonError: "Invalid JSON syntax. Check for missing commas, brackets, or quotes." });
+        }
+    }
+
+    handleJsonSearchChange = (e) => this.setState({ jsonSearchTerm: e.target.value });
+
     // --- Save Handlers ---
     handleSaveEncrypted = () => {
-        if (!this.state.saveData) return;
+        if (!this.state.saveData || this.state.jsonError) return;
         try {
             const jsonString = JSON.stringify(this.state.saveData);
             DownloadData(Encode(jsonString), this.state.fileName);
@@ -220,7 +215,7 @@ class App extends React.Component {
     }
 
     handleSaveJson = () => {
-        if (!this.state.saveData) return;
+        if (!this.state.saveData || this.state.jsonError) return;
         try {
             const jsonString = JSON.stringify(this.state.saveData, null, 2);
             DownloadData(jsonString, this.state.fileName.replace('.dat', '.json'));
@@ -238,14 +233,14 @@ class App extends React.Component {
                     Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal' && !k.startsWith('hasPin') && !k.startsWith('hasMarker')).forEach(key => pd[key] = true);
                     break;
                 case 'tools':
-                    MASTER_TOOL_LIST.forEach((masterTool, index) => {
+                    MASTER_TOOL_LIST.forEach((_, index) => {
                         const tool = this.ensureItemExists(newState, 'Tools', MASTER_TOOL_LIST, index);
                         tool.Data.IsUnlocked = true;
                         tool.Data.HasBeenSeen = true;
                     });
                     break;
                 case 'crest':
-                    MASTER_CREST_LIST.forEach((masterCrest, index) => {
+                    MASTER_CREST_LIST.forEach((_, index) => {
                         const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, index);
                         crest.Data.IsUnlocked = true;
                         if (crest.Data.Slots) crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
@@ -286,7 +281,7 @@ class App extends React.Component {
     }
 
     render() {
-        const { saveData, dragging, error } = this.state;
+        const { saveData, dragging, error, jsonSearchTerm, jsonError } = this.state;
         const pd = saveData ? saveData.playerData : null;
 
         // Create lists of keys for easier mapping
@@ -296,6 +291,17 @@ class App extends React.Component {
         const fastTravelKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Unlocked') || k === 'bellCentipedeAppeared') : [];
         const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
         const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
+
+        let jsonDisplayString = "";
+        if (saveData) {
+            const fullJsonString = JSON.stringify(saveData, null, 2);
+            if (jsonSearchTerm.trim() === "") {
+                jsonDisplayString = fullJsonString;
+            } else {
+                jsonDisplayString = fullJsonString.split('\n').filter(line => line.toLowerCase().includes(jsonSearchTerm.toLowerCase())).join('\n');
+            }
+        }
+
 
         return (
             <div id="wrapper">
@@ -330,8 +336,8 @@ class App extends React.Component {
                 <input id="file-input" type="file" accept=".dat" ref={this.fileInputRef} onChange={this.handleFileSelect} />
                 <hr />
                 <div className="save-buttons">
-                    <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData}>Save .json</button>
-                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData}>Save Encrypted .dat</button>
+                    <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData || !!jsonError}>Save .json</button>
+                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>Save Encrypted .dat</button>
                 </div>
 
                 {saveData && (
@@ -343,7 +349,7 @@ class App extends React.Component {
                                 <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
                                 <div className="form-group"><label>Rosaries</label><input type="number" value={pd.geo} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'geo')} /></div>
                                 <div className="form-group"><label>Shell Shards</label><input type="number" value={pd.ShellShards} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'ShellShards')} /></div>
-                                <div className="form-group"><label>Silk Regen Max</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
+                                <div className="form-group"><label>Completion %</label><input type="number" value={pd.completionPercentage} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'completionPercentage')} /></div>
                                 <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
                             </div>
                         </div>
@@ -368,11 +374,10 @@ class App extends React.Component {
                                 {MASTER_TOOL_LIST.map((masterTool, masterIndex) => {
                                     const currentTool = pd.Tools.savedData.find(t => t.Name === masterTool.Name);
                                     const isEnabled = !!currentTool;
-                                    const isUnlocked = isEnabled && currentTool.Data.IsUnlocked;
                                     const hasAmount = masterTool.Data.AmountLeft > 0;
                                     return (
-                                        <div key={masterTool.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
+                                        <div key={masterTool.Name} className={`tool-item-group`}>
+                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isEnabled && currentTool.Data.IsUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
                                             <label htmlFor={`tool-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterTool.Name}</label>
                                             {hasAmount && (
                                                 <input type="number" disabled={!isEnabled} value={isEnabled ? currentTool.Data.AmountLeft : ''} onChange={(e) => this.handleToolChange(masterIndex, 'AmountLeft', parseInt(e.target.value))} />
@@ -517,10 +522,10 @@ class App extends React.Component {
                                             <div className={`quest-name ${!isEnabled ? 'label-disabled' : ''}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterQuest.Name.replace(/_/g, ' ')}</div>
                                             <div className="quest-controls">
                                                 <div className="quest-radios">
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} onChange={() => { }} disabled={isEnabled} /> Not Encountered</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="seen" checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="completed" checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Not Encountered</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="seen" disabled={!isEnabled} checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" disabled={!isEnabled} checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="completed" disabled={!isEnabled} checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>
                                                 </div>
                                                 {hasCount && (
                                                     <div className="form-group">
@@ -536,6 +541,27 @@ class App extends React.Component {
 
                         <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
                         <div className="editor-section"><h2>Bestiary</h2><p className="note">Bestiary editing features are coming soon.</p></div>
+
+                        <div className="editor-section">
+                            <div className="editor-section-header"><h2>JSON</h2></div>
+                            <div className="json-editor-controls">
+                                <input
+                                    type="text"
+                                    className="search-input"
+                                    placeholder="Search JSON..."
+                                    value={jsonSearchTerm}
+                                    onChange={this.handleJsonSearchChange}
+                                />
+                            </div>
+                            {jsonError && <p className="json-error">{jsonError}</p>}
+                            <textarea
+                                className="json-textarea"
+                                value={jsonDisplayString}
+                                onChange={this.handleJsonTextChange}
+                                readOnly={jsonSearchTerm.trim() !== ""}
+                                spellCheck="false"
+                            />
+                        </div>
                     </div>
                 )}
             </div>
