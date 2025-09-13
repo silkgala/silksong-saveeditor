@@ -22,6 +22,7 @@ class App extends React.Component {
         dragging: false,
         error: null,
         jsonSearchTerm: "",
+        jsonText: "", // Holds the text for the JSON editor
         jsonError: null,
     }
 
@@ -52,7 +53,13 @@ class App extends React.Component {
                 const parsedData = JSON.parse(decrypted);
                 this.originalSaveData = JSON.parse(decrypted); // Store a pristine copy
 
-                this.setState({ saveData: parsedData, fileName: file.name, error: null });
+                this.setState({
+                    saveData: parsedData,
+                    fileName: file.name,
+                    error: null,
+                    jsonText: JSON.stringify(parsedData, null, 2),
+                    jsonError: null
+                });
             } catch (err) {
                 console.error("Decryption failed:", err);
                 this.setState({ error: "File decryption failed. May be corrupt or not a valid save." });
@@ -60,35 +67,44 @@ class App extends React.Component {
         };
     }
 
-    // --- Generic State Handlers ---
-    handleNestedChange = (value, ...keys) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            let current = newState;
-            const lastKey = keys[keys.length - 1];
-            for (let i = 0; i < keys.length - 1; i++) current = current[keys[i]];
-            current[lastKey] = value;
-
-            // Sync logic
-            if (lastKey === 'health') {
-                newState.playerData.maxHealth = value;
-                newState.playerData.maxHealthBase = value;
-            }
-            if (lastKey === 'silk') {
-                newState.playerData.silkMax = value;
-            }
-
-            return { saveData: newState };
+    // This function will be called whenever the UI changes saveData
+    updateJsonTextFromState = (updatedSaveData) => {
+        this.setState({
+            saveData: updatedSaveData,
+            jsonText: JSON.stringify(updatedSaveData, null, 2),
+            jsonError: null
         });
     }
 
-    // --- Complex Array Handlers (with "Get or Create" logic) ---
+    // --- Generic State Handlers ---
+    handleNestedChange = (value, ...keys) => {
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        let current = newState;
+        const lastKey = keys[keys.length - 1];
+        for (let i = 0; i < keys.length - 1; i++) current = current[keys[i]];
+        current[lastKey] = value;
 
-    // Generic function to ensure an item exists in a savedData array
+        // Sync logic
+        if (lastKey === 'health') {
+            newState.playerData.maxHealth = value;
+            newState.playerData.maxHealthBase = value;
+        }
+        if (lastKey === 'silk') {
+            newState.playerData.silkMax = value;
+        }
+
+        this.updateJsonTextFromState(newState);
+    }
+
+    // --- Complex Array Handlers (with "Get or Create" logic) ---
     ensureItemExists = (newState, section, masterList, masterIndex) => {
         const pd = newState.playerData;
         const masterItem = masterList[masterIndex];
-        const savedDataArray = pd[section].savedData;
+        let savedDataArray = pd[section].savedData;
+
+        if (!savedDataArray) {
+            savedDataArray = pd[section].savedData = [];
+        }
 
         let item = savedDataArray.find(x => x.Name === masterItem.Name);
         if (!item) {
@@ -100,107 +116,94 @@ class App extends React.Component {
     };
 
     handleToolChange = (masterIndex, field, value) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const tool = this.ensureItemExists(newState, 'Tools', MASTER_TOOL_LIST, masterIndex);
-
-            tool.Data[field] = value;
-            if (field === 'IsUnlocked' && value === true) tool.Data.HasBeenSeen = true;
-
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const tool = this.ensureItemExists(newState, 'Tools', MASTER_TOOL_LIST, masterIndex);
+        tool.Data[field] = value;
+        if (field === 'IsUnlocked' && value === true) tool.Data.HasBeenSeen = true;
+        this.updateJsonTextFromState(newState);
     }
 
-    // Handles enabling/disabling a collectable or changing its value
     handleCollectableChange = (masterIndex, value, isEnabling) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            if (isEnabling) {
-                this.ensureItemExists(newState, 'Collectables', MASTER_COLLECTABLE_LIST, masterIndex);
-            } else {
-                const collectable = newState.playerData.Collectables.savedData.find(c => c.Name === MASTER_COLLECTABLE_LIST[masterIndex].Name);
-                if (collectable) collectable.Data.Amount = value;
-            }
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        if (isEnabling) {
+            this.ensureItemExists(newState, 'Collectables', MASTER_COLLECTABLE_LIST, masterIndex);
+        } else {
+            const collectable = newState.playerData.Collectables.savedData.find(c => c.Name === MASTER_COLLECTABLE_LIST[masterIndex].Name);
+            if (collectable) collectable.Data.Amount = value;
+        }
+        this.updateJsonTextFromState(newState);
     }
 
     handleCrestChange = (masterIndex, value) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
-            crest.Data.IsUnlocked = value;
-            crest.Data.DisplayNewIndicator = false;
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
+        crest.Data.IsUnlocked = value;
+        crest.Data.DisplayNewIndicator = false;
+        this.updateJsonTextFromState(newState);
     }
 
     handleCrestSlotChange = (masterIndex, slotIndex, value) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
-            crest.Data.Slots[slotIndex].IsUnlocked = value;
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, masterIndex);
+        crest.Data.Slots[slotIndex].IsUnlocked = value;
+        this.updateJsonTextFromState(newState);
     }
 
     handleQuestChange = (masterIndex, newStatus) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const quest = this.ensureItemExists(newState, 'QuestCompletionData', MASTER_QUEST_LIST, masterIndex);
-            const questData = quest.Data;
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const quest = this.ensureItemExists(newState, 'QuestCompletionData', MASTER_QUEST_LIST, masterIndex);
+        const questData = quest.Data;
 
-            if (newStatus === "seen") {
-                questData.HasBeenSeen = true;
-                questData.IsAccepted = false;
-                questData.IsCompleted = false;
-            } else if (newStatus === "accepted") {
-                questData.HasBeenSeen = true;
-                questData.IsAccepted = true;
-                questData.IsCompleted = false;
-            } else if (newStatus === "completed") {
-                questData.HasBeenSeen = true;
-                questData.IsAccepted = true;
-                questData.IsCompleted = true;
-                questData.WasEverCompleted = true;
-            }
-            return { saveData: newState };
-        });
+        if (newStatus === "seen") {
+            questData.HasBeenSeen = true;
+            questData.IsAccepted = false;
+            questData.IsCompleted = false;
+        } else if (newStatus === "accepted") {
+            questData.HasBeenSeen = true;
+            questData.IsAccepted = true;
+            questData.IsCompleted = false;
+        } else if (newStatus === "completed") {
+            questData.HasBeenSeen = true;
+            questData.IsAccepted = true;
+            questData.IsCompleted = true;
+            questData.WasEverCompleted = true;
+        }
+        this.updateJsonTextFromState(newState);
     }
 
     handleQuestCountChange = (masterIndex, count) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const quest = this.ensureItemExists(newState, 'QuestCompletionData', MASTER_QUEST_LIST, masterIndex);
-            quest.Data.CompletedCount = count;
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const quest = this.ensureItemExists(newState, 'QuestCompletionData', MASTER_QUEST_LIST, masterIndex);
+        quest.Data.CompletedCount = count;
+        this.updateJsonTextFromState(newState);
     }
 
     handleRelicChange = (masterIndex, newStatus) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            if (newStatus === "none") {
-                const masterRelic = MASTER_RELIC_LIST[masterIndex];
-                const savedDataArray = newState.playerData.Relics.savedData;
-                const itemIndex = savedDataArray.findIndex(x => x.Name === masterRelic.Name);
-                if (itemIndex > -1) savedDataArray.splice(itemIndex, 1);
-            } else {
-                const relic = this.ensureItemExists(newState, 'Relics', MASTER_RELIC_LIST, masterIndex);
-                const relicData = relic.Data;
-                relicData.IsCollected = false;
-                relicData.IsDeposited = false;
-                relicData.HasSeenInRelicBoard = false;
-                if (newStatus === "collected") relicData.IsCollected = true;
-                else if (newStatus === "deposited") { relicData.IsCollected = true; relicData.IsDeposited = true; }
-                else if (newStatus === "seen") { relicData.IsCollected = true; relicData.IsDeposited = true; relicData.HasSeenInRelicBoard = true; }
-            }
-            return { saveData: newState };
-        });
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        if (newStatus === "none") {
+            const masterRelic = MASTER_RELIC_LIST[masterIndex];
+            const savedDataArray = newState.playerData.Relics.savedData;
+            const itemIndex = savedDataArray.findIndex(x => x.Name === masterRelic.Name);
+            if (itemIndex > -1) savedDataArray.splice(itemIndex, 1);
+        } else {
+            const relic = this.ensureItemExists(newState, 'Relics', MASTER_RELIC_LIST, masterIndex);
+            const relicData = relic.Data;
+            relicData.IsCollected = false;
+            relicData.IsDeposited = false;
+            relicData.HasSeenInRelicBoard = false;
+            if (newStatus === "collected") relicData.IsCollected = true;
+            else if (newStatus === "deposited") { relicData.IsCollected = true; relicData.IsDeposited = true; }
+            else if (newStatus === "seen") { relicData.IsCollected = true; relicData.IsDeposited = true; relicData.HasSeenInRelicBoard = true; }
+        }
+        this.updateJsonTextFromState(newState);
     }
 
     // --- JSON Editor Handlers ---
     handleJsonTextChange = (e) => {
+        this.setState({ jsonText: e.target.value });
+    }
+
+    handleJsonBlur = (e) => {
         try {
             const parsedData = JSON.parse(e.target.value);
             this.setState({ saveData: parsedData, jsonError: null });
@@ -230,43 +233,41 @@ class App extends React.Component {
 
     // --- Bulk Action Handlers ---
     handleSelectAll = (section) => {
-        this.setState(prevState => {
-            const newState = JSON.parse(JSON.stringify(prevState.saveData));
-            const pd = newState.playerData;
+        const newState = JSON.parse(JSON.stringify(this.state.saveData));
+        const pd = newState.playerData;
 
-            switch (section) {
-                case 'upgrades':
-                    Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal' && !k.startsWith('hasPin') && !k.startsWith('hasMarker')).forEach(key => pd[key] = true);
-                    break;
-                case 'tools':
-                    MASTER_TOOL_LIST.forEach((_, index) => {
-                        const tool = this.ensureItemExists(newState, 'Tools', MASTER_TOOL_LIST, index);
-                        tool.Data.IsUnlocked = true;
-                        tool.Data.HasBeenSeen = true;
-                    });
-                    break;
-                case 'crest':
-                    MASTER_CREST_LIST.forEach((_, index) => {
-                        const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, index);
-                        crest.Data.IsUnlocked = true;
-                        if (crest.Data.Slots) crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
-                    });
-                    pd.UnlockedExtraBlueSlot = true;
-                    pd.UnlockedExtraYellowSlot = true;
-                    break;
-                case 'maps':
-                    Object.keys(pd).filter(k => (k.startsWith('Has') && k.endsWith('Map')) || k.startsWith('hasPin') || k.startsWith('hasMarker')).forEach(key => pd[key] = true);
-                    break;
-                case 'fastTravel':
-                    Object.keys(pd).filter(k => k.startsWith('Unlocked') || k === 'bellCentipedeAppeared').forEach(key => pd[key] = true);
-                    break;
-                case 'savedFleas':
-                    Object.keys(pd).filter(k => k.startsWith('SavedFlea_')).forEach(key => pd[key] = true);
-                    break;
-                default: break;
-            }
-            return { saveData: newState };
-        });
+        switch (section) {
+            case 'upgrades':
+                Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal' && !k.startsWith('hasPin') && !k.startsWith('hasMarker')).forEach(key => pd[key] = true);
+                break;
+            case 'tools':
+                MASTER_TOOL_LIST.forEach((_, index) => {
+                    const tool = this.ensureItemExists(newState, 'Tools', MASTER_TOOL_LIST, index);
+                    tool.Data.IsUnlocked = true;
+                    tool.Data.HasBeenSeen = true;
+                });
+                break;
+            case 'crest':
+                MASTER_CREST_LIST.forEach((_, index) => {
+                    const crest = this.ensureItemExists(newState, 'ToolEquips', MASTER_CREST_LIST, index);
+                    crest.Data.IsUnlocked = true;
+                    if (crest.Data.Slots) crest.Data.Slots.forEach(slot => slot.IsUnlocked = true);
+                });
+                pd.UnlockedExtraBlueSlot = true;
+                pd.UnlockedExtraYellowSlot = true;
+                break;
+            case 'maps':
+                Object.keys(pd).filter(k => (k.startsWith('Has') && k.endsWith('Map')) || k.startsWith('hasPin') || k.startsWith('hasMarker')).forEach(key => pd[key] = true);
+                break;
+            case 'fastTravel':
+                Object.keys(pd).filter(k => k.startsWith('Unlocked') || k === 'bellCentipedeAppeared').forEach(key => pd[key] = true);
+                break;
+            case 'savedFleas':
+                Object.keys(pd).filter(k => k.startsWith('SavedFlea_')).forEach(key => pd[key] = true);
+                break;
+            default: break;
+        }
+        this.updateJsonTextFromState(newState);
     }
 
     // --- Helper Functions for Rendering ---
@@ -287,7 +288,7 @@ class App extends React.Component {
     }
 
     render() {
-        const { saveData, dragging, error, jsonSearchTerm, jsonError } = this.state;
+        const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError } = this.state;
         const pd = saveData ? saveData.playerData : null;
 
         // Create lists of keys for easier mapping
@@ -298,14 +299,9 @@ class App extends React.Component {
         const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
         const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
 
-        let jsonDisplayString = "";
-        if (saveData) {
-            const fullJsonString = JSON.stringify(saveData, null, 2);
-            if (jsonSearchTerm.trim() === "") {
-                jsonDisplayString = fullJsonString;
-            } else {
-                jsonDisplayString = fullJsonString.split('\n').filter(line => line.toLowerCase().includes(jsonSearchTerm.toLowerCase())).join('\n');
-            }
+        let jsonDisplayString = jsonText;
+        if (jsonSearchTerm.trim() !== "") {
+            jsonDisplayString = jsonText.split('\n').filter(line => line.toLowerCase().includes(jsonSearchTerm.toLowerCase())).join('\n');
         }
 
 
@@ -357,8 +353,10 @@ class App extends React.Component {
                                 <div className="form-group"><label>Shell Shards</label><input type="number" value={pd.ShellShards} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'ShellShards')} /></div>
                                 <div className="form-group"><label>Completion %</label><input type="number" value={pd.completionPercentage} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'completionPercentage')} /></div>
                                 <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
-                                <div className="form-group"><label>Silk Regen Max</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
-                                <div className="form-group"><label>Silk Spool Broken</label><div className="checkbox-group"><input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} /></div></div>
+                            </div>
+                            <h3>Cheats</h3>
+                            <div className="form-grid">
+                                <div className="form-group"><label>Infinite Air Jump</label><div className="checkbox-group"><input type="checkbox" checked={pd.infiniteAirJump} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'infiniteAirJump')} /></div></div>
                             </div>
                         </div>
 
@@ -370,6 +368,7 @@ class App extends React.Component {
                             <div className="form-grid">
                                 {upgradeKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
                                 <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
+                                <div className="form-group"><label>Silk Spool Broken</label><div className="checkbox-group"><input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} /></div><span className="note">Blocks silk at the start of the game.</span></div>
                             </div>
                         </div>
 
@@ -446,6 +445,10 @@ class App extends React.Component {
                             <div className="editor-subsection-header"><h3>Obtained Maps</h3></div>
                             <div className="form-grid">
                                 {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            </div>
+                            <div className="editor-subsection-header"><h3>Fill out maps</h3></div>
+                            <div className="form-grid">
+                                <div className="form-group"><label>All Rooms Mapped</label><div className="checkbox-group"><input type="checkbox" checked={pd.mapAllRooms} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'mapAllRooms')} /></div><span className="note">This fills out all maps in the game.</span></div>
                             </div>
                             <div className="editor-subsection-header"><h3>Map Pins & Markers</h3></div>
                             <div className="form-grid">
@@ -569,10 +572,14 @@ class App extends React.Component {
                                 />
                             </div>
                             {jsonError && <p className="json-error">{jsonError}</p>}
+                            <p className="notes" style={{ textAlign: 'center', marginTop: '-10px', marginBottom: '10px' }}>
+                                {jsonSearchTerm.trim() !== "" ? "Editing is disabled while searching." : "Click outside the text area to apply changes."}
+                            </p>
                             <textarea
                                 className="json-textarea"
-                                value={jsonDisplayString}
+                                value={jsonSearchTerm.trim() !== "" ? jsonDisplayString : jsonText}
                                 onChange={this.handleJsonTextChange}
+                                onBlur={this.handleJsonBlur}
                                 readOnly={jsonSearchTerm.trim() !== ""}
                                 spellCheck="false"
                             />
