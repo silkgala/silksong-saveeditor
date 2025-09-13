@@ -97,13 +97,18 @@ class App extends React.Component {
     }
 
     // --- Complex Array Handlers (with "Get or Create" logic) ---
-    ensureItemExists = (newState, section, masterList, masterIndex) => {
+    ensureItemExists = (newState, section, masterList, masterIndex, subSection = 'savedData') => {
         const pd = newState.playerData;
         const masterItem = masterList[masterIndex];
-        let savedDataArray = pd[section].savedData;
+
+        // Ensure parent object exists
+        if (!pd[section]) {
+            pd[section] = { [subSection]: [] };
+        }
+        let savedDataArray = pd[section][subSection];
 
         if (!savedDataArray) {
-            savedDataArray = pd[section].savedData = [];
+            savedDataArray = pd[section][subSection] = [];
         }
 
         let item = savedDataArray.find(x => x.Name === masterItem.Name);
@@ -190,7 +195,7 @@ class App extends React.Component {
             const relicData = relic.Data;
             relicData.IsCollected = false;
             relicData.IsDeposited = false;
-            relicData.HasBeenSeenInRelicBoard = false;
+            relicData.HasSeenInRelicBoard = false;
             if (newStatus === "collected") relicData.IsCollected = true;
             else if (newStatus === "deposited") { relicData.IsCollected = true; relicData.IsDeposited = true; }
             else if (newStatus === "seen") { relicData.IsCollected = true; relicData.IsDeposited = true; relicData.HasSeenInRelicBoard = true; }
@@ -198,25 +203,9 @@ class App extends React.Component {
         this.updateJsonTextFromState(newState);
     }
 
-    ensureJournalEntryExists = (newState, masterIndex) => {
-        const pd = newState.playerData;
-        const masterEntry = MASTER_JOURNAL_LIST[masterIndex];
-
-        if (!pd.EnemyJournalKillData) pd.EnemyJournalKillData = { list: [] };
-        if (!pd.EnemyJournalKillData.list) pd.EnemyJournalKillData.list = [];
-
-        let entry = pd.EnemyJournalKillData.list.find(x => x.Name === masterEntry.Name);
-        if (!entry) {
-            const newEntry = JSON.parse(JSON.stringify(masterEntry));
-            pd.EnemyJournalKillData.list.push(newEntry);
-            entry = pd.EnemyJournalKillData.list.find(x => x.Name === masterEntry.Name);
-        }
-        return entry;
-    };
-
     handleJournalEntryChange = (masterIndex, hasBeenSeen) => {
         const newState = JSON.parse(JSON.stringify(this.state.saveData));
-        const entry = this.ensureJournalEntryExists(newState, masterIndex);
+        const entry = this.ensureItemExists(newState, 'EnemyJournalKillData', MASTER_JOURNAL_LIST, masterIndex, 'list');
 
         entry.Record.HasBeenSeen = hasBeenSeen;
         if (hasBeenSeen && entry.Record.Kills < 1) {
@@ -230,7 +219,7 @@ class App extends React.Component {
 
     handleJournalKillsChange = (masterIndex, kills) => {
         const newState = JSON.parse(JSON.stringify(this.state.saveData));
-        const entry = this.ensureJournalEntryExists(newState, masterIndex);
+        const entry = this.ensureItemExists(newState, 'EnemyJournalKillData', MASTER_JOURNAL_LIST, masterIndex, 'list');
 
         let newKills = parseInt(kills, 10);
         if (isNaN(newKills)) newKills = 1;
@@ -340,7 +329,7 @@ class App extends React.Component {
         const mapKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Has') && k.endsWith('Map')) : [];
         const mapPinAndMarkerKeys = pd ? Object.keys(pd).filter(k => k.startsWith('hasPin') || k.startsWith('hasMarker')) : [];
         const fastTravelTopKeys = pd ? Object.keys(pd).filter(k => k === 'UnlockedFastTravel' || k === 'UnlockedFastTravelTeleport') : [];
-        const fastTravelOtherKeys = pd ? Object.keys(pd).filter(k => (k.startsWith('Unlocked') && !fastTravelTopKeys.includes(k)) || k === 'bellCentipedeAppeared') : [];
+        const fastTravelOtherKeys = pd ? Object.keys(pd).filter(k => (k.startsWith('Unlocked') && !fastTravelTopKeys.includes(k) && !k.includes('Slot')) || k === 'bellCentipedeAppeared') : [];
         const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
         const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
 
@@ -599,9 +588,9 @@ class App extends React.Component {
                                             <div className="quest-controls">
                                                 <div className="quest-radios">
                                                     <label><input type="radio" name={`quest-${masterIndex}`} value="not_encountered" checked={status === "not_encountered"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Not Encountered</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="seen" disabled={!isEnabled} checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" disabled={!isEnabled} checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
-                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="completed" disabled={!isEnabled} checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="seen" checked={status === "seen"} onChange={() => this.handleQuestChange(masterIndex, "seen")} /> Seen</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="accepted" checked={status === "accepted"} onChange={() => this.handleQuestChange(masterIndex, "accepted")} /> Accepted</label>
+                                                    <label><input type="radio" name={`quest-${masterIndex}`} value="completed" checked={status === "completed"} onChange={() => this.handleQuestChange(masterIndex, "completed")} /> Completed</label>
                                                 </div>
                                                 {hasCount && (
                                                     <div className="form-group">
@@ -617,7 +606,7 @@ class App extends React.Component {
 
                         <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
 
-                        {pd.EnemyJournalKillData && <div className="editor-section">
+                        <div className="editor-section">
                             <div className="editor-section-header"><h2>Bestiary</h2></div>
                             <h3>Journal</h3>
                             <div className="form-grid">
@@ -626,7 +615,7 @@ class App extends React.Component {
                             <h3>List</h3>
                             <div className="form-grid">
                                 {MASTER_JOURNAL_LIST.map((masterEntry, masterIndex) => {
-                                    const currentEntry = pd.EnemyJournalKillData.list.find(e => e.Name === masterEntry.Name);
+                                    const currentEntry = pd.EnemyJournalKillData && pd.EnemyJournalKillData.list ? pd.EnemyJournalKillData.list.find(e => e.Name === masterEntry.Name) : null;
                                     const isEnabled = !!currentEntry && currentEntry.Record.HasBeenSeen;
                                     const kills = currentEntry ? currentEntry.Record.Kills : 0;
                                     return (
@@ -638,7 +627,7 @@ class App extends React.Component {
                                     );
                                 })}
                             </div>
-                        </div>}
+                        </div>
 
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>JSON</h2></div>
@@ -653,10 +642,11 @@ class App extends React.Component {
                             </div>
                             {jsonError && <p className="json-error">{jsonError}</p>}
                             <p className="notes" style={{ textAlign: 'center', marginTop: '-10px', marginBottom: '10px' }}>
-                                {jsonSearchTerm.trim() !== "" ? "Editing is disabled while searching." : "Click outside the text area to apply changes."}
+                                {jsonSearchTerm.trim() !== "" ? "Editing is disabled while searching. Clear search to edit." : "Click outside the text area to apply changes."}
                             </p>
                             <textarea
                                 className="json-textarea"
+                                style={{ opacity: jsonSearchTerm.trim() !== "" ? 0.7 : 1 }}
                                 value={jsonSearchTerm.trim() !== "" ? jsonDisplayString : jsonText}
                                 onChange={this.handleJsonTextChange}
                                 onBlur={this.handleJsonBlur}
