@@ -333,15 +333,6 @@ class App extends React.Component {
         const savedFleaKeys = pd ? Object.keys(pd).filter(k => k.startsWith('SavedFlea_')) : [];
         const fleaQuestKeys = pd ? Object.keys(pd).filter(k => k.startsWith('Caravan') || k.startsWith('FleaGames') || k.startsWith('MetTroupe') || k.startsWith('SeenFlea') || k.startsWith('grishkin')) : [];
 
-        // Event keys for structured layout
-        const bossEventKeys = pd ? Object.keys(pd).filter(k => k.includes('defeated') || k.includes('encountered')) : [];
-        const worldEventKeys = pd ? Object.keys(pd).filter(k => !bossEventKeys.includes(k)) : []; // Simplified for this example
-        // A more detailed implementation would have manual arrays for each NPC group like 'fixer', 'sherma', etc.
-        const fixerEventKeys = worldEventKeys.filter(k => k.startsWith('fixer'));
-        const shermaEventKeys = worldEventKeys.filter(k => k.startsWith('sherma'));
-        const mapperEventKeys = worldEventKeys.filter(k => k.startsWith('mapper'));
-        const otherWorldEventKeys = worldEventKeys.filter(k => !k.startsWith('fixer') && !k.startsWith('sherma') && !k.startsWith('mapper'));
-
         let jsonDisplayString = jsonText;
         if (jsonSearchTerm.trim() !== "") {
             jsonDisplayString = jsonText.split('\n').filter(line => line.toLowerCase().includes(jsonSearchTerm.toLowerCase())).join('\n');
@@ -613,35 +604,7 @@ class App extends React.Component {
                             </div>
                         </div>}
 
-                        <div className="editor-section">
-                            <div className="editor-section-header"><h2>Events</h2></div>
-                            <h3>Bosses</h3>
-                            <div className="form-grid">
-                                {bossEventKeys.map(key => (
-                                    <div key={key} className="form-group">
-                                        <label>{formatLabel(key)}</label>
-                                        <div className="checkbox-group">
-                                            <input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <h3>World Events</h3>
-                            <div className="form-grid">
-                                {otherWorldEventKeys.map(key => (
-                                    <div key={key} className="form-group">
-                                        <label>{formatLabel(key)}</label>
-                                        {typeof pd[key] === 'boolean' ? (
-                                            <div className="checkbox-group">
-                                                <input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
-                                            </div>
-                                        ) : (
-                                            <input type="number" value={pd[key]} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', key)} />
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        <div className="editor-section"><h2>Events</h2><h3>Bosses</h3><p className="note">Boss event editing features are coming soon.</p><h3>World Events</h3><p className="note">World event editing features are coming soon.</p></div>
 
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Bestiary</h2></div>
