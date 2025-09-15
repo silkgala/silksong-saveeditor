@@ -9,6 +9,51 @@ const formatLabel = (key) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
 };
 
+// --- Helper Functions ---
+const getOS = () => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    if (userAgent.indexOf("win") !== -1) return "windows";
+    if (userAgent.indexOf("mac") !== -1) return "macos";
+    if (userAgent.indexOf("linux") !== -1) return "linux";
+    return "unknown";
+};
+
+const formatPlayTime = (totalSeconds) => {
+    if (isNaN(totalSeconds) || totalSeconds < 0) {
+        return "0 hours, 0 minutes";
+    }
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours} hours, ${minutes} minutes`;
+};
+
+const CREST_SLOT_INFO = {
+    "Hunter": ["White", "Yellow", "Yellow", "White", "Red", "Blue", "Blue"],
+    "Reaper": ["White", "Red", "Red", "Red", "Blue", "Yellow", "White"],
+    "Wanderer": ["White", "Red", "Blue", "Blue", "Yellow", "Yellow", "Yellow"],
+    "Warrior": ["White", "White", "Red", "Yellow", "Yellow"],
+    "Hunter_v2": ["White", "Blue", "Yellow", "White", "Red", "White", "White"],
+    "Toolmaster": ["White", "Yellow", "Red", "White", "Blue", "White", "Yellow"], // Assuming a default based on other patterns
+    "Cursed": [],
+    "Witch": ["White", "Red", "Red", "Blue", "Yellow", "White", "Yellow"],
+    "Spell": ["White", "White", "Blue", "Blue", "White"],
+    "Hunter_v3": ["Red", "Blue", "Yellow", "Red", "Red", "White", "White"]
+};
+
+const renderColoredLabel = (text) => {
+    const parts = text.split(/(\(Red\)|\(Blue\)|\(Yellow\)|\(White\))/);
+    return parts.map((part, index) => {
+        if (part === '(Red)') return <span key={index} className="text-red">Red</span>;
+        if (part === '(Blue)') return <span key={index} className="text-blue">Blue</span>;
+        if (part === '(Yellow)') return <span key={index} className="text-yellow">Yellow</span>;
+        if (part === '(White)') return <span key={index}>White</span>;
+        // This regex includes the parentheses in the matched part, so we need to add them back for the text part
+        if (parts[index - 1]?.match(/\(.*\)/)) return `(${part})`;
+        if (parts[index + 1]?.match(/\(.*\)/)) return `${part}(`;
+        return part;
+    });
+};
+
 class App extends React.Component {
     constructor() {
         super()
@@ -24,6 +69,7 @@ class App extends React.Component {
         jsonSearchTerm: "",
         jsonText: "", // Holds the text for the JSON editor
         jsonError: null,
+        copiedPath: null
     }
 
     // --- Drag and Drop Handlers ---
@@ -85,8 +131,8 @@ class App extends React.Component {
         current[lastKey] = value;
 
         // Sync logic
-        if (lastKey === 'health') {
-            newState.playerData.maxHealth = value;
+        if (lastKey === 'maxHealth') {
+            newState.playerData.health = value;
             newState.playerData.maxHealthBase = value;
         }
         if (lastKey === 'silk') {
@@ -303,6 +349,13 @@ class App extends React.Component {
         this.updateJsonTextFromState(newState);
     }
 
+    handleCopyPath = (path) => {
+        navigator.clipboard.writeText(path).then(() => {
+            this.setState({ copiedPath: path });
+            setTimeout(() => this.setState({ copiedPath: null }), 2000);
+        });
+    };
+
     // --- Helper Functions for Rendering ---
     getQuestStatus = (questData) => {
         if (!questData) return "not_encountered";
@@ -351,8 +404,9 @@ class App extends React.Component {
     };
 
     render() {
-        const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError } = this.state;
+        const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError, copiedPath } = this.state;
         const pd = saveData ? saveData.playerData : null;
+        const currentOS = getOS();
 
         // Create lists of keys for easier mapping
         const upgradeKeys = pd ? Object.keys(pd).filter(k => k.startsWith('has') && k !== 'hasJournal' && !k.startsWith('hasPin') && !k.startsWith('hasMarker')) : [];
@@ -423,10 +477,18 @@ class App extends React.Component {
             'BonePlazaOpened', 'bonegraveOpen', 'greatBoneGateOpened', 'crashingIntoGreymoor', 'crashedIntoGreymoor', 'hitCrowCourtSwitch', 'OpenedCrowSummonsDoor', 'PickedUpCrowMemento', 'sethLeftShellwood', 'openedDust05Gate', 'UnlockedDustCage', 'FixedDustBellBench', 'EnclaveStatePilgrimSmall', 'enclaveLevel', 'cityMerchantSaved', 'wardWoken', 'bankOpened', 'leftTheGrandForum', 'uncagedGiantFlea', 'tamedGiantFlea', 'completedSuperJumpSequence', 'fullyEnteredVerdania', 'ShamanRitualCursedConvo', 'FleaGamesStarted', 'FleaGamesEnded'
         ] : [];
 
+        const savePaths = {
+            windows: '%USERPROFILE%\\AppData\\LocalLow\\Team Cherry\\Silksong\\',
+            windowsStore: '%LOCALAPPDATA%\\Packages\\TeamCherry.Silksong_y4jvztpgccj42\\SystemAppData\\wgs',
+            macos: '$HOME/Library/Application Support/unity.Team-Cherry.Silksong/',
+            linux: '$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/'
+        };
+
 
         return (
             <div id="wrapper">
                 <h1>Silksong Save Editor</h1>
+                <p className="subtitle">Visual Silksong save editor</p>
                 <div className="credits">
                     <a href="https://github.com/just-addwater/silksong-saveeditor" target="_blank" rel="noopener noreferrer">Source on GitHub</a>
                     <span>&nbsp;&nbsp;•&nbsp;&nbsp;</span>
@@ -436,21 +498,35 @@ class App extends React.Component {
                 </div>
 
                 <div className="instructions">
-                    <h2>Save File Locations</h2>
-                    <table className="save-locations-table"><tbody>
-                        <tr><td>Windows</td><td><code>%USERPROFILE%\AppData\LocalLow\Team Cherry\Silksong\</code></td></tr>
-                        <tr><td>Microsoft Store</td><td><code>%LOCALAPPDATA%\Packages\TeamCherry.Silksong_y4jvztpgccj42\SystemAppData\wgs</code></td></tr>
-                        <tr><td>macOS (OS X)</td><td><code>$HOME/Library/Application Support/unity.Team-Cherry.Silksong/</code></td></tr>
-                        <tr><td>Linux</td><td><code>$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/</code></td></tr>
-                    </tbody></table>
-                    <p className="notes important-note">user1.dat for save slot 1, user2.dat for save slot 2 etc (Up to 4 slots). Please select one of these files then scroll down and edit it. Save it as the same name or a different save slot number when finished.</p>
+                    <h2>How to Use</h2>
+                    <p className="important-note">
+                        Start by selecting your save file (e.g., <code>user1.dat</code>, <code>user2.dat</code>, etc.). These files are usually found in the locations listed below. Once loaded, you can edit the values, then click the "Save & download" button to get your updated file. Replace the old file on your computer with the new one.
+                    </p>
                     <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
+                    <table className="save-locations-table"><tbody>
+                        <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
+                            <td>Windows</td>
+                            <td><code>{savePaths.windows}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windows)}>{copiedPath === savePaths.windows ? 'Copied!' : 'Copy Path'}</button></td>
+                        </tr>
+                        <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
+                            <td>Microsoft Store</td>
+                            <td><code>{savePaths.windowsStore}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windowsStore)}>{copiedPath === savePaths.windowsStore ? 'Copied!' : 'Copy Path'}</button></td>
+                        </tr>
+                        <tr className={currentOS === 'macos' ? 'highlighted' : ''}>
+                            <td>macOS (OS X)</td>
+                            <td><code>{savePaths.macos}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.macos)}>{copiedPath === savePaths.macos ? 'Copied!' : 'Copy Path'}</button></td>
+                        </tr>
+                        <tr className={currentOS === 'linux' ? 'highlighted' : ''}>
+                            <td>Linux</td>
+                            <td><code>{savePaths.linux}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.linux)}>{copiedPath === savePaths.linux ? 'Copied!' : 'Copy Path'}</button></td>
+                        </tr>
+                    </tbody></table>
                 </div>
 
                 <div className="warning">Always backup your save files (.dat) before editing!</div>
                 <div className={`drop-zone ${dragging ? 'dragging' : ''}`} onClick={this.handleBrowseClick} onDragEnter={this.handleDragEnter} onDragLeave={this.handleDragLeave} onDragOver={this.handleDragOver} onDrop={this.handleDrop}>
-                    <p>Drag .dat files here or</p>
-                    <button className="btn-browse">Browse Files</button>
+                    <p>Drag and drop the userX.dat save files or</p>
+                    <button className="btn-browse">Browse and select save file</button>
                     {error && <p className="error-message">{error}</p>}
                 </div>
 
@@ -458,7 +534,7 @@ class App extends React.Component {
                 <hr />
                 <div className="save-buttons">
                     <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData || !!jsonError}>Save .json</button>
-                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>Save Encrypted .dat</button>
+                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>Save & download updated save file (.dat)</button>
                 </div>
 
                 {saveData && (
@@ -466,10 +542,12 @@ class App extends React.Component {
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Basic Stats</h2></div>
                             <div className="form-grid">
-                                <div className="form-group"><label>Health</label><input type="number" value={pd.health} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'health')} /><span className="note">Over 11 masks can break UI.</span></div>
+                                <div className="form-group"><label>Health</label><input type="number" value={pd.maxHealth} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'maxHealth')} /><span className="note">Over 11 masks can break UI.</span></div>
                                 <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
+                                <div className="form-group"><label>Max Silk Regen</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
                                 <div className="form-group"><label>Rosaries</label><input type="number" value={pd.geo} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'geo')} /></div>
                                 <div className="form-group"><label>Shell Shards</label><input type="number" value={pd.ShellShards} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'ShellShards')} /></div>
+                                <div className="form-group"><label>Play Time</label><input type="number" value={pd.playTime} onChange={(e) => this.handleNestedChange(parseFloat(e.target.value), 'playerData', 'playTime')} /><span className="note">In seconds. ({formatPlayTime(pd.playTime)})</span></div>
                                 <div className="form-group"><label>Completion %</label><input type="number" value={pd.completionPercentage} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'completionPercentage')} /></div>
                                 <div className="form-group"><label>Needle Upgrades</label><input type="number" value={pd.nailUpgrades} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'nailUpgrades')} /><span className="note">Value from 0 to 4.</span></div>
                             </div>
@@ -522,6 +600,13 @@ class App extends React.Component {
                                 <h2>Crest</h2>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('crest')}>Select All</button>
                             </div>
+                            <div className="crest-legend">
+                                <strong>Slot Colors:</strong> &nbsp;
+                                <span className="text-red">Red</span> (Weapons) &nbsp;&nbsp;
+                                <span className="text-blue">Blue</span> (Defense) &nbsp;&nbsp;
+                                <span className="text-yellow">Yellow</span> (Exploration) &nbsp;&nbsp;
+                                <span>White</span> (Skills)
+                            </div>
                             <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '20px' }}>
                                 <div className="form-group"><label>Unlocked Extra Blue Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraBlueSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraBlueSlot')} /></div></div>
                                 <div className="form-group"><label>Unlocked Extra Yellow Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraYellowSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraYellowSlot')} /></div></div>
@@ -530,11 +615,12 @@ class App extends React.Component {
                                 {MASTER_CREST_LIST.map((masterCrest, masterIndex) => {
                                     const currentCrest = pd.ToolEquips.savedData.find(c => c.Name === masterCrest.Name);
                                     const isEnabled = !!currentCrest;
+                                    const slotTypes = CREST_SLOT_INFO[masterCrest.Name] || [];
                                     return (
                                         <div key={masterCrest.Name} className={`crest-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
                                             <div className="checkbox-group">
                                                 <input id={`crest-unlock-${masterIndex}`} type="checkbox" checked={isEnabled && currentCrest.Data.IsUnlocked} onChange={(e) => this.handleCrestChange(masterIndex, e.target.checked)} />
-                                                <label htmlFor={`crest-unlock-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCrest.Name.replace(/_/g, ' ')}</label>
+                                                <label htmlFor={`crest-unlock-${masterIndex}`} className="crest-name" style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCrest.Name.replace(/_/g, ' ')}</label>
                                             </div>
                                             {masterCrest.Data.Slots && masterCrest.Data.Slots.length > 0 && (
                                                 <div className="crest-slots">
@@ -547,7 +633,9 @@ class App extends React.Component {
                                                                 checked={isEnabled && currentCrest.Data.Slots && currentCrest.Data.Slots[slotIndex] && currentCrest.Data.Slots[slotIndex].IsUnlocked}
                                                                 onChange={(e) => this.handleCrestSlotChange(masterIndex, slotIndex, e.target.checked)}
                                                             />
-                                                            <label htmlFor={`crest-${masterIndex}-slot-${slotIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>Slot {slotIndex + 1}</label>
+                                                            <label htmlFor={`crest-${masterIndex}-slot-${slotIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>
+                                                                {renderColoredLabel(`Slot ${slotIndex + 1} (${slotTypes[slotIndex] || 'Unknown'})`)}
+                                                            </label>
                                                         </div>
                                                     ))}
                                                 </div>

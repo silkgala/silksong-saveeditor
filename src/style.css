@@ -7,6 +7,8 @@
     --text-muted-color: #888;
     --border-color: #444;
     --font-family: 'Inter', sans-serif;
+    --color-blue: #61afef;
+    --color-yellow: #e5c07b;
 }
 
 * {
@@ -39,8 +41,17 @@ body {
 h1 {
     color: var(--primary-color);
     text-align: center;
-    margin: 0 0 10px 0;
+    margin: 0 0 5px 0;
 }
+
+.subtitle {
+    text-align: center;
+    color: var(--text-muted-color);
+    font-size: 1.1em;
+    margin-top: -5px;
+    margin-bottom: 10px;
+}
+
 
 .credits {
     text-align: center;
@@ -72,10 +83,15 @@ h1 {
     margin: 15px 0;
 }
 
+    .save-locations-table tr.highlighted {
+        background-color: rgba(228, 52, 52, 0.1);
+    }
+
     .save-locations-table th, .save-locations-table td {
         padding: 10px;
         text-align: left;
         border-bottom: 1px solid var(--border-color);
+        vertical-align: middle;
     }
 
     .save-locations-table th {
@@ -87,10 +103,17 @@ h1 {
         background-color: #111;
         padding: 2px 5px;
         border-radius: 4px;
-        /* Ensures long paths wrap on small screens */
         overflow-wrap: break-word;
         word-break: break-all;
     }
+
+    .save-locations-table .btn-copy {
+        padding: 4px 10px;
+        font-size: 0.8em;
+        margin-left: 10px;
+        white-space: nowrap;
+    }
+
 
 .notes {
     font-size: 0.9em;
@@ -315,6 +338,10 @@ input[type="checkbox"], input[type="radio"] {
     border-radius: 5px;
 }
 
+    .crest-item-group .crest-name {
+        font-weight: bold;
+    }
+
 .crest-slots {
     display: flex;
     flex-wrap: wrap;
@@ -322,6 +349,26 @@ input[type="checkbox"], input[type="radio"] {
     margin-top: 10px;
     padding-top: 10px;
     border-top: 1px solid var(--border-color);
+}
+
+.crest-legend {
+    margin-bottom: 20px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    font-size: 0.9em;
+}
+
+.text-red {
+    color: var(--primary-color);
+}
+
+.text-blue {
+    color: var(--color-blue);
+}
+
+.text-yellow {
+    color: var(--color-yellow);
 }
 
 .quest-item-group {
