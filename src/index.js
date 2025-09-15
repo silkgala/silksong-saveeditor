@@ -33,7 +33,7 @@ const CREST_SLOT_INFO = {
     "Wanderer": ["White", "Red", "Blue", "Blue", "Yellow", "Yellow", "Yellow"],
     "Warrior": ["White", "White", "Red", "Yellow", "Yellow"],
     "Hunter_v2": ["White", "Blue", "Yellow", "White", "Red", "White", "White"],
-    "Toolmaster": ["White", "Yellow", "Red", "White", "Blue", "White", "Yellow"], // Assuming a default based on other patterns
+    "Toolmaster": ["White", "Yellow", "Red", "White", "Blue", "White", "Yellow"],
     "Cursed": [],
     "Witch": ["White", "Red", "Red", "Blue", "Yellow", "White", "Yellow"],
     "Spell": ["White", "White", "Blue", "Blue", "White"],
@@ -42,7 +42,7 @@ const CREST_SLOT_INFO = {
 
 const renderColoredLabel = (text) => {
     const parts = text.split(/(\(Red\)|\(Blue\)|\(Yellow\)|\(White\))/);
-    return parts.map((part, index) => {
+    return parts.filter(part => part).map((part, index) => {
         switch (part) {
             case '(Red)':
                 return <span key={index} className="text-red">Red</span>;
@@ -139,8 +139,8 @@ class App extends React.Component {
             newState.playerData.health = value;
             newState.playerData.maxHealthBase = value;
         }
-        if (lastKey === 'silk') {
-            newState.playerData.silkMax = value;
+        if (lastKey === 'silkMax') {
+            newState.playerData.silk = value;
         }
 
         this.updateJsonTextFromState(newState);
@@ -388,12 +388,10 @@ class App extends React.Component {
 
             if (typeof value === 'boolean') {
                 return (
-                    <div key={key} className="form-group">
-                        <label>{label}</label>
-                        <div className="checkbox-group">
-                            <input type="checkbox" checked={value} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
-                        </div>
-                    </div>
+                    <label key={key} className="form-group checkbox-group">
+                        <input type="checkbox" checked={value} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
+                        <span>{label}</span>
+                    </label>
                 );
             } else if (typeof value === 'number') {
                 return (
@@ -503,9 +501,12 @@ class App extends React.Component {
 
                 <div className="instructions">
                     <h2>How to Use</h2>
-                    <p className="important-note">
-                        Start by selecting your save file (e.g., <code>user1.dat</code>, <code>user2.dat</code>, etc.). These files are usually found in the locations listed below. Once loaded, you can edit the values, then click the "Save & download" button to get your updated file. Replace the old file on your computer with the new one.
-                    </p>
+                    <ol className="important-note">
+                        <li>Find your save file (e.g., <code>user1.dat</code>) in one of the locations listed below.</li>
+                        <li>Drag and drop the file onto the designated area, or use the browse button to select it.</li>
+                        <li>Scroll down and edit any values you wish to change.</li>
+                        <li>Click "Save & download updated save file (.dat)" and replace your old save file with the newly downloaded one.</li>
+                    </ol>
                     <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
                     <table className="save-locations-table"><tbody>
                         <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
@@ -547,7 +548,7 @@ class App extends React.Component {
                             <div className="editor-section-header"><h2>Basic Stats</h2></div>
                             <div className="form-grid">
                                 <div className="form-group"><label>Health</label><input type="number" value={pd.maxHealth} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'maxHealth')} /><span className="note">Over 11 masks can break UI.</span></div>
-                                <div className="form-group"><label>Silk</label><input type="number" value={pd.silk} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silk')} /><span className="note">Max 17.</span></div>
+                                <div className="form-group"><label>Silk</label><input type="number" value={pd.silkMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkMax')} /><span className="note">Max 17.</span></div>
                                 <div className="form-group"><label>Max Silk Regen</label><input type="number" value={pd.silkRegenMax} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkRegenMax')} /></div>
                                 <div className="form-group"><label>Rosaries</label><input type="number" value={pd.geo} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'geo')} /></div>
                                 <div className="form-group"><label>Shell Shards</label><input type="number" value={pd.ShellShards} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'ShellShards')} /></div>
@@ -557,7 +558,10 @@ class App extends React.Component {
                             </div>
                             <h3>Cheats</h3>
                             <div className="form-grid">
-                                <div className="form-group"><label>Infinite Air Jump</label><div className="checkbox-group"><input type="checkbox" checked={pd.infiniteAirJump} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'infiniteAirJump')} /></div></div>
+                                <label className="form-group checkbox-group">
+                                    <input type="checkbox" checked={pd.infiniteAirJump} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'infiniteAirJump')} />
+                                    <span>Infinite Air Jump</span>
+                                </label>
                             </div>
                         </div>
 
@@ -569,9 +573,15 @@ class App extends React.Component {
                             <div className="form-grid">
                                 <div className="form-group"><label>Heart Pieces</label><input type="number" value={pd.heartPieces} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'heartPieces')} /></div>
                                 <div className="form-group"><label>Silk Spool Parts</label><input type="number" value={pd.silkSpoolParts} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'silkSpoolParts')} /></div>
-                                {upgradeKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                                {upgradeKeys.map(key => (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{formatLabel(key)}</span></label>))}
                                 <div className="form-group"><label>Attunement Level</label><input type="number" value={pd.attunementLevel} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'attunementLevel')} /></div>
-                                <div className="form-group"><label>Silk Spool Broken</label><div className="checkbox-group"><input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} /></div><span className="note">Blocks silk at the start of the game.</span></div>
+                                <div className="form-group">
+                                    <label className="checkbox-group">
+                                        <input type="checkbox" checked={pd.IsSilkSpoolBroken} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'IsSilkSpoolBroken')} />
+                                        <span>Silk Spool Broken</span>
+                                    </label>
+                                    <span className="note">Blocks silk at the start of the game.</span>
+                                </div>
                             </div>
                         </div>
 
@@ -588,11 +598,13 @@ class App extends React.Component {
                                     const hasAmount = masterTool.Data.AmountLeft > 0;
                                     return (
                                         <div key={masterTool.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
-                                            <label htmlFor={`tool-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterTool.Name}</label>
-                                            {hasAmount && (
-                                                <input type="number" disabled={!isEnabled} value={isEnabled ? currentTool.Data.AmountLeft : ''} onChange={(e) => this.handleToolChange(masterIndex, 'AmountLeft', parseInt(e.target.value))} />
-                                            )}
+                                            <div className="main-control">
+                                                <input id={`tool-enable-${masterIndex}`} type="checkbox" checked={isUnlocked} onChange={(e) => this.handleToolChange(masterIndex, 'IsUnlocked', e.target.checked)} />
+                                                <label htmlFor={`tool-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterTool.Name}</label>
+                                                {hasAmount && (
+                                                    <input type="number" disabled={!isEnabled} value={isEnabled ? currentTool.Data.AmountLeft : ''} onChange={(e) => this.handleToolChange(masterIndex, 'AmountLeft', parseInt(e.target.value))} />
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -612,8 +624,8 @@ class App extends React.Component {
                                 <span>White</span> (Skills)
                             </div>
                             <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '20px' }}>
-                                <div className="form-group"><label>Unlocked Extra Blue Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraBlueSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraBlueSlot')} /></div></div>
-                                <div className="form-group"><label>Unlocked Extra Yellow Slot</label><div className="checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraYellowSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraYellowSlot')} /></div></div>
+                                <label className="form-group checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraBlueSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraBlueSlot')} /><span>Unlocked Extra Blue Slot</span></label>
+                                <label className="form-group checkbox-group"><input type="checkbox" checked={pd.UnlockedExtraYellowSlot} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'UnlockedExtraYellowSlot')} /><span>Unlocked Extra Yellow Slot</span></label>
                             </div>
                             <div className="form-grid">
                                 {MASTER_CREST_LIST.map((masterCrest, masterIndex) => {
@@ -622,14 +634,14 @@ class App extends React.Component {
                                     const slotTypes = CREST_SLOT_INFO[masterCrest.Name] || [];
                                     return (
                                         <div key={masterCrest.Name} className={`crest-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <div className="checkbox-group">
+                                            <label className="main-control">
                                                 <input id={`crest-unlock-${masterIndex}`} type="checkbox" checked={isEnabled && currentCrest.Data.IsUnlocked} onChange={(e) => this.handleCrestChange(masterIndex, e.target.checked)} />
-                                                <label htmlFor={`crest-unlock-${masterIndex}`} className="crest-name" style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCrest.Name.replace(/_/g, ' ')}</label>
-                                            </div>
+                                                <span className="crest-name" style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCrest.Name.replace(/_/g, ' ')}</span>
+                                            </label>
                                             {masterCrest.Data.Slots && masterCrest.Data.Slots.length > 0 && (
                                                 <div className="crest-slots">
                                                     {masterCrest.Data.Slots.map((slot, slotIndex) => (
-                                                        <div key={slotIndex} className="checkbox-group">
+                                                        <label key={slotIndex} className="checkbox-group">
                                                             <input
                                                                 id={`crest-${masterIndex}-slot-${slotIndex}`}
                                                                 type="checkbox"
@@ -637,10 +649,10 @@ class App extends React.Component {
                                                                 checked={isEnabled && currentCrest.Data.Slots && currentCrest.Data.Slots[slotIndex] && currentCrest.Data.Slots[slotIndex].IsUnlocked}
                                                                 onChange={(e) => this.handleCrestSlotChange(masterIndex, slotIndex, e.target.checked)}
                                                             />
-                                                            <label htmlFor={`crest-${masterIndex}-slot-${slotIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>
+                                                            <span style={{ opacity: isEnabled ? 1 : 0.6 }}>
                                                                 {renderColoredLabel(`Slot ${slotIndex + 1} (${slotTypes[slotIndex] || 'Unknown'})`)}
-                                                            </label>
-                                                        </div>
+                                                            </span>
+                                                        </label>
                                                     ))}
                                                 </div>
                                             )}
@@ -656,16 +668,20 @@ class App extends React.Component {
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('maps')}>Select All</button>
                             </div>
                             <div className="editor-subsection-header"><h3>Obtained Maps</h3></div>
-                            <div className="form-grid">
-                                {mapKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            <div className="form-grid form-grid-columns-4">
+                                {mapKeys.map(key => (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{formatLabel(key.replace('Has', '').replace('Map', ' Map'))}</span></label>))}
                             </div>
                             <div className="editor-subsection-header"><h3>Fill out maps</h3></div>
                             <div className="form-grid">
-                                <div className="form-group"><label>All Rooms Mapped</label><div className="checkbox-group"><input type="checkbox" checked={pd.mapAllRooms} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'mapAllRooms')} /></div><span className="note">This fills out all maps in the game.</span></div>
+                                <label className="form-group checkbox-group">
+                                    <input type="checkbox" checked={pd.mapAllRooms} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'mapAllRooms')} />
+                                    <span>All Rooms Mapped</span>
+                                    <span className="note" style={{ marginLeft: 'auto' }}>This fills out all maps in the game.</span>
+                                </label>
                             </div>
                             <div className="editor-subsection-header"><h3>Map Pins & Markers</h3></div>
-                            <div className="form-grid">
-                                {mapPinAndMarkerKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key.replace('hasPin', 'Pin: ').replace('hasMarker', 'Marker '))}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            <div className="form-grid form-grid-columns-4">
+                                {mapPinAndMarkerKeys.map(key => (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{formatLabel(key.replace('hasPin', 'Pin: ').replace('hasMarker', 'Marker '))}</span></label>))}
                             </div>
                         </div>
 
@@ -676,17 +692,15 @@ class App extends React.Component {
                             </div>
                             <div className="form-grid" style={{ gridTemplateColumns: '1fr 1fr', marginBottom: '20px' }}>
                                 {fastTravelTopKeys.map(key => (
-                                    <div key={key} className="form-group">
-                                        <label>{formatLabel(key)}</label>
-                                        <div className="checkbox-group">
-                                            <input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
-                                        </div>
-                                    </div>
+                                    <label key={key} className="form-group checkbox-group">
+                                        <input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} />
+                                        <span>{formatLabel(key)}</span>
+                                    </label>
                                 ))}
                             </div>
                             <hr />
-                            <div className="form-grid">
-                                {fastTravelOtherKeys.map(key => (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            <div className="form-grid form-grid-columns-4">
+                                {fastTravelOtherKeys.map(key => (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{formatLabel(key)}</span></label>))}
                                 <div className="form-group"><label>Fast Travel NPC Location</label><input type="number" value={pd.FastTravelNPCLocation} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', 'FastTravelNPCLocation')} /></div>
                             </div>
                         </div>
@@ -699,9 +713,11 @@ class App extends React.Component {
                                     const isEnabled = !!currentCollectable;
                                     return (
                                         <div key={masterCollectable.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <input type="checkbox" checked={isEnabled} onChange={(e) => this.handleCollectableChange(masterIndex, isEnabled ? 0 : 1, e.target.checked)} />
-                                            <label style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCollectable.Name.replace(/_/g, ' ')}</label>
-                                            <input type="number" disabled={!isEnabled} value={isEnabled ? currentCollectable.Data.Amount : ''} onChange={(e) => this.handleCollectableChange(masterIndex, parseInt(e.target.value), false)} />
+                                            <div className="main-control">
+                                                <input type="checkbox" checked={isEnabled} onChange={(e) => this.handleCollectableChange(masterIndex, isEnabled ? 0 : 1, e.target.checked)} />
+                                                <label style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterCollectable.Name.replace(/_/g, ' ')}</label>
+                                                <input type="number" disabled={!isEnabled} value={isEnabled ? currentCollectable.Data.Amount : ''} onChange={(e) => this.handleCollectableChange(masterIndex, parseInt(e.target.value), false)} />
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -714,14 +730,14 @@ class App extends React.Component {
                                 <h3>Saved Fleas</h3>
                                 <button className="btn-secondary btn-select-all" onClick={() => this.handleSelectAll('savedFleas')}>Select All</button>
                             </div>
-                            <div className="form-grid">
-                                {savedFleaKeys.map(key => (<div key={key} className="form-group"><label>{key.substring('SavedFlea_'.length).replace(/_/g, ' ')}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>))}
+                            <div className="form-grid form-grid-columns-4">
+                                {savedFleaKeys.map(key => (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{key.substring('SavedFlea_'.length).replace(/_/g, ' ')}</span></label>))}
                             </div>
                             <div className="editor-subsection-header"><h3>Caravan & Flea Games</h3></div>
                             <div className="form-grid">
                                 {fleaQuestKeys.map(key => (
                                     typeof pd[key] === 'boolean' ?
-                                        (<div key={key} className="form-group"><label>{formatLabel(key)}</label><div className="checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /></div></div>) :
+                                        (<label key={key} className="form-group checkbox-group"><input type="checkbox" checked={pd[key]} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', key)} /><span>{formatLabel(key)}</span></label>) :
                                         (<div key={key} className="form-group"><label>{formatLabel(key)}</label><input type="number" value={pd[key]} onChange={(e) => this.handleNestedChange(parseInt(e.target.value), 'playerData', key)} /></div>)
                                 ))}
                             </div>
@@ -791,7 +807,7 @@ class App extends React.Component {
                                         <label>{boss.name}</label>
                                         <div className="checkbox-group">
                                             {boss.encounteredKey && pd[boss.encounteredKey] !== undefined && (
-                                                <label style={{ fontSize: '0.9em' }}>
+                                                <label style={{ fontSize: '0.9em', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
                                                         checked={pd[boss.encounteredKey]}
@@ -801,7 +817,7 @@ class App extends React.Component {
                                                 </label>
                                             )}
                                             {boss.defeatedKey && pd[boss.defeatedKey] !== undefined && (
-                                                <label style={{ fontSize: '0.9em' }}>
+                                                <label style={{ fontSize: '0.9em', cursor: 'pointer' }}>
                                                     <input
                                                         type="checkbox"
                                                         checked={pd[boss.defeatedKey]}
@@ -817,44 +833,56 @@ class App extends React.Component {
 
                             <div className="editor-subsection-header"><h3>World Events</h3></div>
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Main Progression</h4></div>
+                            <h4>Main Progression</h4>
                             <div className="form-grid">{this.renderEventInputs(mainStoryEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Bell Shrines & Memories</h4></div>
-                            <div className="form-grid">{this.renderEventInputs(bellShrineAndMemoryEvents)}</div>
+                            <h4>Bell Shrines & Memories</h4>
+                            <div className="form-grid form-grid-columns-4">{this.renderEventInputs(bellShrineAndMemoryEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Melodies</h4></div>
+                            <h4>Melodies</h4>
                             <div className="form-grid">{this.renderEventInputs(melodyEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Fixer Pilgrim</h4></div>
+                            <h4>Fixer Pilgrim</h4>
                             <div className="form-grid">{this.renderEventInputs(fixerEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Sherma</h4></div>
+                            <h4>Sherma</h4>
                             <div className="form-grid">{this.renderEventInputs(shermaEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Mapper</h4></div>
+                            <h4>Mapper</h4>
                             <div className="form-grid">{this.renderEventInputs(mapperEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Garmond</h4></div>
+                            <h4>Garmond</h4>
                             <div className="form-grid">{this.renderEventInputs(garmondEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Nuu & Gilly</h4></div>
+                            <h4>Nuu & Gilly</h4>
                             <div className="form-grid">{this.renderEventInputs(nuuAndGillyEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Other NPCs & Quests</h4></div>
+                            <h4>Other NPCs & Quests</h4>
                             <div className="form-grid">{this.renderEventInputs(otherNpcEvents)}</div>
+                            <hr />
 
-                            <div className="editor-subsection-header" style={{ marginTop: '15px' }}><h4>Misc Location Events</h4></div>
+                            <h4>Misc Location Events</h4>
                             <div className="form-grid">{this.renderEventInputs(locationEvents)}</div>
                         </div>
 
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Bestiary</h2></div>
-                            <h3>Journal</h3>
+                            <div className="editor-subsection-header"><h3>Journal</h3></div>
                             <div className="form-grid">
-                                <div className="form-group"><label>Has Journal</label><div className="checkbox-group"><input type="checkbox" checked={pd.hasJournal} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'hasJournal')} /></div></div>
+                                <label className="form-group checkbox-group">
+                                    <input type="checkbox" checked={pd.hasJournal} onChange={(e) => this.handleNestedChange(e.target.checked, 'playerData', 'hasJournal')} />
+                                    <span>Has Journal</span>
+                                </label>
                             </div>
-                            <h3>List</h3>
+                            <div className="editor-subsection-header"><h3>Enemy List</h3></div>
                             <div className="form-grid">
                                 {MASTER_JOURNAL_LIST.map((masterEntry, masterIndex) => {
                                     const currentEntry = pd.EnemyJournalKillData && pd.EnemyJournalKillData.list ? pd.EnemyJournalKillData.list.find(e => e.Name === masterEntry.Name) : null;
@@ -862,9 +890,11 @@ class App extends React.Component {
                                     const kills = currentEntry ? currentEntry.Record.Kills : 0;
                                     return (
                                         <div key={masterEntry.Name} className={`tool-item-group ${!isEnabled ? 'item-group-disabled' : ''}`}>
-                                            <input id={`journal-enable-${masterIndex}`} type="checkbox" checked={isEnabled} onChange={(e) => this.handleJournalEntryChange(masterIndex, e.target.checked)} />
-                                            <label htmlFor={`journal-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterEntry.Name}</label>
-                                            <input type="number" disabled={!isEnabled} value={isEnabled ? kills : ''} onChange={(e) => this.handleJournalKillsChange(masterIndex, e.target.value)} />
+                                            <div className="main-control">
+                                                <input id={`journal-enable-${masterIndex}`} type="checkbox" checked={isEnabled} onChange={(e) => this.handleJournalEntryChange(masterIndex, e.target.checked)} />
+                                                <label htmlFor={`journal-enable-${masterIndex}`} style={{ opacity: isEnabled ? 1 : 0.6 }}>{masterEntry.Name}</label>
+                                                <input type="number" disabled={!isEnabled} value={isEnabled ? kills : ''} onChange={(e) => this.handleJournalKillsChange(masterIndex, e.target.value)} />
+                                            </div>
                                         </div>
                                     );
                                 })}

@@ -77,6 +77,14 @@ h1 {
     border: 1px solid var(--border-color);
 }
 
+    .instructions ol {
+        padding-left: 20px;
+    }
+
+    .instructions li {
+        margin-bottom: 10px;
+    }
+
 .save-locations-table {
     width: 100%;
     border-collapse: collapse;
@@ -124,6 +132,7 @@ h1 {
 .important-note {
     color: var(--text-color);
     font-size: 1em;
+    line-height: 1.5;
 }
 
 .warning {
@@ -223,12 +232,13 @@ button:disabled {
     display: flex;
     justify-content: center;
     gap: 20px;
+    flex-wrap: wrap;
 }
 
 hr {
     border: none;
     border-top: 1px solid var(--border-color);
-    margin: 10px 0;
+    margin: 25px 0 15px 0;
 }
 
 /* --- Editor Form --- */
@@ -239,9 +249,10 @@ hr {
 
 .editor-section {
     background-color: var(--surface-color);
-    padding: 20px;
+    padding: 20px 25px;
     border-radius: 8px;
     border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .editor-section-header, .editor-subsection-header {
@@ -263,10 +274,17 @@ hr {
         padding: 0;
     }
 
-.editor-subsection-header h3 {
-    color: var(--text-muted-color);
-    font-weight: 500;
+.editor-subsection-header {
+    margin-top: 25px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 20px;
 }
+
+    .editor-subsection-header h3 {
+        color: #ccc;
+        font-weight: 500;
+    }
 
 .btn-select-all {
     padding: 5px 10px;
@@ -280,20 +298,38 @@ hr {
     gap: 20px;
 }
 
+.form-grid-columns-4 {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+
 .form-group {
     display: flex;
     flex-direction: column;
+    gap: 8px;
 }
 
-    .form-group label, .tool-item-group label {
+    .form-group label {
         font-weight: 500;
-        margin-bottom: 8px;
     }
+
+    .form-group.checkbox-group {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        cursor: pointer;
+    }
+
+        .form-group.checkbox-group label {
+            margin: 0;
+            font-weight: normal;
+        }
+
 
     .form-group .note {
         font-size: 0.8em;
         color: var(--text-muted-color);
-        margin-top: 5px;
+        margin-top: -4px;
     }
 
 input[type="number"] {
@@ -307,39 +343,50 @@ input[type="number"] {
     width: 100px;
 }
 
-.checkbox-group {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
 input[type="checkbox"], input[type="radio"] {
     width: 1.3em;
     height: 1.3em;
     accent-color: var(--primary-color);
     cursor: pointer;
+    flex-shrink: 0;
 }
 
-.tool-item-group {
+.tool-item-group, .crest-item-group, .quest-item-group {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-direction: column;
     gap: 10px;
-}
-
-    .tool-item-group label {
-        flex-grow: 1;
-        margin: 0;
-    }
-
-.crest-item-group {
-    padding: 10px;
+    padding: 12px;
     border: 1px solid var(--border-color);
     border-radius: 5px;
+    transition: background-color 0.2s;
 }
+
+    .tool-item-group:hover, .crest-item-group:hover, .quest-item-group:hover {
+        background-color: #333;
+    }
+
+
+    .tool-item-group .main-control {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+        .tool-item-group .main-control label {
+            flex-grow: 1;
+            margin: 0;
+            cursor: pointer;
+        }
 
     .crest-item-group .crest-name {
         font-weight: bold;
+    }
+
+    .crest-item-group .main-control {
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
 
 .crest-slots {
@@ -351,12 +398,20 @@ input[type="checkbox"], input[type="radio"] {
     border-top: 1px solid var(--border-color);
 }
 
+    .crest-slots label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
 .crest-legend {
     margin-bottom: 20px;
     padding: 10px;
     border: 1px solid var(--border-color);
     border-radius: 5px;
     font-size: 0.9em;
+    background-color: #222;
 }
 
 .text-red {
@@ -371,16 +426,9 @@ input[type="checkbox"], input[type="radio"] {
     color: var(--color-yellow);
 }
 
-.quest-item-group {
-    padding: 10px;
-    border: 1px solid var(--border-color);
-    border-radius: 5px;
+.quest-item-group .quest-name {
+    font-weight: 500;
 }
-
-    .quest-item-group .quest-name {
-        font-weight: 500;
-        margin-bottom: 10px;
-    }
 
 .quest-controls {
     display: flex;
@@ -401,6 +449,7 @@ input[type="checkbox"], input[type="radio"] {
         align-items: center;
         gap: 5px;
         font-size: 0.9em;
+        cursor: pointer;
     }
 
 /* --- JSON Editor Section --- */
