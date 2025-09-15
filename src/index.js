@@ -480,10 +480,10 @@ class App extends React.Component {
         ] : [];
 
         const savePaths = {
-            windows: '%USERPROFILE%\\AppData\\LocalLow\\Team Cherry\\Silksong\\',
+            windows: '%userprofile%\\appdata\\LocalLow\\Team Cherry\\Hollow Knight Silksong\\',
             windowsStore: '%LOCALAPPDATA%\\Packages\\TeamCherry.Silksong_y4jvztpgccj42\\SystemAppData\\wgs',
-            macos: '$HOME/Library/Application Support/unity.Team-Cherry.Silksong/',
-            linux: '$XDG_CONFIG_HOME/unity3d/Team Cherry/Silksong/'
+            macos: '~/Library/Application Support/unity.Team-Cherry.Silksong/',
+            linux: '~/.config/unity3d/Team Cherry/Hollow Knight Silksong/'
         };
 
 
@@ -502,12 +502,12 @@ class App extends React.Component {
                 <div className="instructions">
                     <h2>How to Use</h2>
                     <ol className="important-note">
-                        <li>Find your save file (e.g., <code>user1.dat</code>) in one of the locations listed below.</li>
+                        <li>Find your save file (e.g., <code>user1.dat</code> for save slot 1,<code>user2.dat</code> for slot 2, etc (4 total slots)) in one of the locations listed below. You can copy and paste the address below into Windows Explorer to get to that directory</li>
                         <li>Drag and drop the file onto the designated area, or use the browse button to select it.</li>
                         <li>Scroll down and edit any values you wish to change.</li>
-                        <li>Click "Save & download updated save file (.dat)" and replace your old save file with the newly downloaded one.</li>
+                        <li>Click "Save & download updated save file (.dat)" and replace your old save file with the newly downloaded one or save it into a different slot.</li>
                     </ol>
-                    <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder.</p>
+                    <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder. </p>
                     <table className="save-locations-table"><tbody>
                         <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
                             <td>Windows</td>
@@ -522,7 +522,7 @@ class App extends React.Component {
                             <td><code>{savePaths.macos}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.macos)}>{copiedPath === savePaths.macos ? 'Copied!' : 'Copy Path'}</button></td>
                         </tr>
                         <tr className={currentOS === 'linux' ? 'highlighted' : ''}>
-                            <td>Linux</td>
+                            <td>Linux/Steamdeck</td>
                             <td><code>{savePaths.linux}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.linux)}>{copiedPath === savePaths.linux ? 'Copied!' : 'Copy Path'}</button></td>
                         </tr>
                     </tbody></table>
