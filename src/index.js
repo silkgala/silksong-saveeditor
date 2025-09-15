@@ -43,14 +43,18 @@ const CREST_SLOT_INFO = {
 const renderColoredLabel = (text) => {
     const parts = text.split(/(\(Red\)|\(Blue\)|\(Yellow\)|\(White\))/);
     return parts.map((part, index) => {
-        if (part === '(Red)') return <span key={index} className="text-red">Red</span>;
-        if (part === '(Blue)') return <span key={index} className="text-blue">Blue</span>;
-        if (part === '(Yellow)') return <span key={index} className="text-yellow">Yellow</span>;
-        if (part === '(White)') return <span key={index}>White</span>;
-        // This regex includes the parentheses in the matched part, so we need to add them back for the text part
-        if (parts[index - 1]?.match(/\(.*\)/)) return `(${part})`;
-        if (parts[index + 1]?.match(/\(.*\)/)) return `${part}(`;
-        return part;
+        switch (part) {
+            case '(Red)':
+                return <span key={index} className="text-red">Red</span>;
+            case '(Blue)':
+                return <span key={index} className="text-blue">Blue</span>;
+            case '(Yellow)':
+                return <span key={index} className="text-yellow">Yellow</span>;
+            case '(White)':
+                return <span key={index}>White</span>;
+            default:
+                return part;
+        }
     });
 };
 
