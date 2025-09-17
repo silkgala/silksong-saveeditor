@@ -102,6 +102,27 @@ h1 {
         vertical-align: middle;
     }
 
+    /* --- NEW STYLES for Switch row --- */
+    .save-locations-table .switch-row {
+        background-color: rgba(228, 52, 52, 0.15);
+    }
+
+    .save-locations-table .switch-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .save-locations-table .switch-cell label a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+            .save-locations-table .switch-cell label a:hover {
+                text-decoration: underline;
+            }
+
+
     .save-locations-table th {
         color: var(--text-muted-color);
         font-weight: 500;
@@ -216,6 +237,13 @@ button {
     .btn-primary:hover {
         background-color: var(--primary-hover-color);
     }
+
+/* --- NEW STYLE for bigger Switch button --- */
+.btn-switch-save {
+    padding: 12px 24px;
+    font-size: 1.05em;
+}
+
 
 button:disabled {
     background-color: #3e3e3e;

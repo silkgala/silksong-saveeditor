@@ -73,7 +73,8 @@ class App extends React.Component {
         jsonSearchTerm: "",
         jsonText: "", // Holds the text for the JSON editor
         jsonError: null,
-        copiedPath: null
+        copiedPath: null,
+        switchMode: false // <-- ADDED FOR SWITCH FUNCTIONALITY
     }
 
     // --- Drag and Drop Handlers ---
@@ -96,10 +97,27 @@ class App extends React.Component {
         }
 
         const reader = new FileReader();
-        reader.readAsArrayBuffer(file);
+        reader.readAsArrayBuffer(file); // Always read as ArrayBuffer to handle both types
         reader.onload = () => {
+            const resultBytes = new Uint8Array(reader.result);
+            const { switchMode } = this.state;
+
             try {
-                const decrypted = Decode(new Uint8Array(reader.result));
+                let decrypted;
+                // We attempt to decode as a PC file first.
+                try {
+                    decrypted = Decode(resultBytes);
+                } catch (pcDecodeError) {
+                    // If PC decoding fails...
+                    if (switchMode) {
+                        // In Switch mode, we assume it's a plain text (JSON) Switch file.
+                        decrypted = new TextDecoder().decode(resultBytes);
+                    } else {
+                        // In PC mode, this is an error. We guide the user.
+                        throw new Error("This appears to be a Nintendo Switch save file. Please check the 'Nintendo Switch' mode box and try again.");
+                    }
+                }
+
                 const parsedData = JSON.parse(decrypted);
                 this.originalSaveData = JSON.parse(decrypted); // Store a pristine copy
 
@@ -110,12 +128,18 @@ class App extends React.Component {
                     jsonText: JSON.stringify(parsedData, null, 2),
                     jsonError: null
                 });
+
             } catch (err) {
-                console.error("Decryption failed:", err);
-                this.setState({ error: "File decryption failed. May be corrupt or not a valid save." });
+                console.error("File loading failed:", err);
+                // Display the specific error for switch files, or a generic one for others.
+                const errorMessage = err.message.includes("Nintendo Switch")
+                    ? err.message
+                    : "File decryption failed. The file may be corrupt or not a valid save file.";
+                this.setState({ error: errorMessage });
             }
         };
     }
+
 
     // This function will be called whenever the UI changes saveData
     updateJsonTextFromState = (updatedSaveData) => {
@@ -144,6 +168,11 @@ class App extends React.Component {
         }
 
         this.updateJsonTextFromState(newState);
+    }
+
+    // --- NEW: Handler for Switch Mode Toggle ---
+    handleSwitchModeToggle = (e) => {
+        this.setState({ switchMode: e.target.checked });
     }
 
     // --- Complex Array Handlers (with "Get or Create" logic) ---
@@ -298,11 +327,21 @@ class App extends React.Component {
     handleJsonSearchChange = (e) => this.setState({ jsonSearchTerm: e.target.value });
 
     // --- Save Handlers ---
-    handleSaveEncrypted = () => {
+    handleSaveEncrypted = () => { // This is now the PC save handler
         if (!this.state.saveData || this.state.jsonError) return;
         try {
             const jsonString = JSON.stringify(this.state.saveData);
             DownloadData(Encode(jsonString), this.state.fileName);
+        } catch (err) { this.setState({ error: "Failed to save the file." }); }
+    }
+
+    // --- NEW: Switch Save Handler ---
+    handleSaveSwitch = () => {
+        if (!this.state.saveData || this.state.jsonError) return;
+        try {
+            // Switch saves are plain, unencrypted JSON
+            const jsonString = JSON.stringify(this.state.saveData);
+            DownloadData(jsonString, this.state.fileName);
         } catch (err) { this.setState({ error: "Failed to save the file." }); }
     }
 
@@ -406,7 +445,7 @@ class App extends React.Component {
     };
 
     render() {
-        const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError, copiedPath } = this.state;
+        const { saveData, dragging, error, jsonSearchTerm, jsonText, jsonError, copiedPath, switchMode } = this.state;
         const pd = saveData ? saveData.playerData : null;
         const currentOS = getOS();
 
@@ -525,6 +564,16 @@ class App extends React.Component {
                             <td>Linux/Steamdeck</td>
                             <td><code>{savePaths.linux}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.linux)}>{copiedPath === savePaths.linux ? 'Copied!' : 'Copy Path'}</button></td>
                         </tr>
+                        {/* --- NEW SWITCH ROW --- */}
+                        <tr className="switch-row">
+                            <td>Nintendo Switch</td>
+                            <td className="switch-cell">
+                                <input id="switch-mode" type="checkbox" checked={switchMode} onChange={this.handleSwitchModeToggle} />
+                                <label htmlFor="switch-mode">
+                                    Enables Switch save file loading/saving and converting between PC. Use <a href="https://github.com/J-D-K/JKSV" target="_blank" rel="noopener noreferrer">JKSV</a>
+                                </label>
+                            </td>
+                        </tr>
                     </tbody></table>
                 </div>
 
@@ -539,11 +588,22 @@ class App extends React.Component {
                 <hr />
                 <div className="save-buttons">
                     <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData || !!jsonError}>Save .json</button>
-                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>Save & download updated save file (.dat)</button>
+
+                    {/* --- UPDATED SAVE BUTTONS --- */}
+                    <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>
+                        {switchMode ? 'Save & download PC save file' : 'Save & download updated save file (.dat)'}
+                    </button>
+                    {switchMode && (
+                        <button className="btn-primary btn-switch-save" onClick={this.handleSaveSwitch} disabled={!saveData || !!jsonError}>
+                            Save & download Nintendo Switch save file
+                        </button>
+                    )}
                 </div>
 
                 {saveData && (
                     <div className="editor-container">
+                        {/* The rest of the editor UI remains unchanged... */}
+                        {/* ... (all the sections for stats, upgrades, etc.) ... */}
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Basic Stats</h2></div>
                             <div className="form-grid">
