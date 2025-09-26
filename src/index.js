@@ -74,7 +74,7 @@ class App extends React.Component {
         jsonText: "", // Holds the text for the JSON editor
         jsonError: null,
         copiedPath: null,
-        switchMode: false // <-- ADDED FOR SWITCH FUNCTIONALITY
+        switchMode: false
     }
 
     // --- Drag and Drop Handlers ---
@@ -504,15 +504,18 @@ class App extends React.Component {
         ];
 
         const mainStoryEvents = pd ? ['completedTutorial', 'act2Started', 'blackThreadWorld', 'bindCutscenePlayed', 'completedAbyssAscent', 'act3_wokeUp', 'act3_enclaveWakeSceneCompleted', 'CompletedRedMemory', 'LastDiveCursedConvo', 'CollectedHeartFlower', 'CollectedHeartCoral', 'CollectedHeartHunter', 'CollectedHeartClover'] : [];
+        const slabKidnappingEvents = pd ? ['visitedUpperSlab', 'visitedSlab', 'greymoor05_killedJailer', 'boneEastJailerKilled', 'boneEastJailerClearedOut'] : [];
         const fixerEvents = pd ? Object.keys(pd).filter(k => k.startsWith('fixer')) : [];
         const shermaEvents = pd ? Object.keys(pd).filter(k => k.startsWith('sherma')) : [];
         const mapperEvents = pd ? Object.keys(pd).filter(k => k.startsWith('mapper') || k.startsWith('SeenMapper') || k.startsWith('MapperLeft')) : [];
         const garmondEvents = pd ? Object.keys(pd).filter(k => k.startsWith('garmond')) : [];
         const nuuAndGillyEvents = pd ? Object.keys(pd).filter(k => k.startsWith('nuu') || k.startsWith('gilly') || k.startsWith('MetHalfwayHunter')) : [];
+        const pilbyEvents = pd ? ['learnedPilbyName', 'pilbyFriendship', 'pilbyMeetConvo', 'pilbyCampConvo', 'pilbyMosstownConvo', 'pilbyKilled', 'pilbyLeftPilgrimsRest'] : [];
+        const greenPrinceEvents = pd ? ['GreenPrinceLocation', 'GreenPrinceSeenSong04'] : [];
         const bellShrineAndMemoryEvents = pd ? Object.keys(pd).filter(k => k.startsWith('bellShrine') || k.startsWith('completedMemory') || k.startsWith('chapelClosed')) : [];
         const melodyEvents = pd ? Object.keys(pd).filter(k => k.startsWith('HasMelody') || k.startsWith('UnlockedMelody') || k.startsWith('SeenMelody') || k.startsWith('HeardMelody') || k.startsWith('Conductor')) : [];
         const otherNpcEvents = pd ? [
-            'metDruid', 'druidTradeIntro', 'druidMossBerriesSold', 'druidAct3Intro', 'metLearnedPilgrim', 'metLearnedPilgrimAct3', 'metDicePilgrim', 'dicePilgrimDefeated', 'dicePilgrimState', 'dicePilgrimGameExplained', 'dicePilgrimBank', 'pilgrimRestMerchant_SingConvo', 'pilgrimRestMerchant_RhinoRuckusConvo', 'pilgrimRestCrowd', 'MetCrestUpgrader', 'MetCrestUpgraderAct3', 'CrestPreUpgradeTalked', 'CrestPurposeQueued', 'CrestTalkedPurpose', 'CrestUpgraderOfferedFinal', 'HasBoundCrestUpgrader', 'churchKeeperIntro', 'churchKeeperCursedConvo', 'churchKeeperBonegraveConvo', 'ChurchKeeperLeftBasement', 'learnedPilbyName', 'pilbyFriendship', 'pilbyMeetConvo', 'pilbyCampConvo', 'pilbyMosstownConvo', 'pilbyKilled', 'pilbyLeftPilgrimsRest', 'MetForgeDaughter', 'ForgeDaughterTalkState', 'PurchasedForgeToolKit', 'BallowInSauna', 'BallowMovedToDivingBell', 'BallowGivenKey', 'ForgeDaughterWhiteFlowerDlg', 'SeenDivingBellGoneAbyss', 'MetMaskMaker', 'MetMaskMakerAct3', 'MaskMakerTalkedRelationship', 'MetArchitect', 'MetArchitectAct3', 'PurchasedArchitectKey', 'ArchitectTalkedCrest', 'LibrarianAskedForRelic', 'GivenLibrarianRelic', 'LibrarianMetAct3', 'LibrarianCollectionComplete', 'MetGourmandServant', 'GotGourmandReward', 'metCaretaker', 'CaretakerOfferedSnareQuest', 'MetSeamstress', 'SeamstressOfferedQuest', 'BlueScientistMet', 'BlueScientistQuestOffered', 'BlueAssistantBloodCount', 'BlueScientistDead', 'metGrubFarmer', 'grubFarmLevel', 'metGrubFarmerAct3', 'MetGrubFarmerMimic', 'GrubFarmerSilkGrubsSold', 'metSwampMuckmen', 'MetBelltownShopkeep', 'MetBelltownGreeter', 'MetBelltownCouriers', 'PinsmithMetBelltown', 'BelltownHermitMet', 'MetBelltownBagpipers', 'MetBelltownDoctor', 'BelltownDoctorCuredCurse', 'MetBelltownRelicDealer', 'MetFisherHomeFull', 'MetPilgrimsRestShop', 'MetAntMerchant', 'SeenAntMerchantDead', 'SprintMasterCurrentRace', 'SprintMasterExtraRaceWon', 'MetPinChallengeBug', 'PinGalleryWallet'
+            'metDruid', 'druidTradeIntro', 'druidMossBerriesSold', 'druidAct3Intro', 'metLearnedPilgrim', 'metLearnedPilgrimAct3', 'metDicePilgrim', 'dicePilgrimDefeated', 'dicePilgrimState', 'dicePilgrimGameExplained', 'dicePilgrimBank', 'pilgrimRestMerchant_SingConvo', 'pilgrimRestMerchant_RhinoRuckusConvo', 'pilgrimRestCrowd', 'MetCrestUpgrader', 'MetCrestUpgraderAct3', 'CrestPreUpgradeTalked', 'CrestPurposeQueued', 'CrestTalkedPurpose', 'CrestUpgraderOfferedFinal', 'HasBoundCrestUpgrader', 'churchKeeperIntro', 'churchKeeperCursedConvo', 'churchKeeperBonegraveConvo', 'ChurchKeeperLeftBasement', 'MetForgeDaughter', 'ForgeDaughterTalkState', 'PurchasedForgeToolKit', 'BallowInSauna', 'BallowMovedToDivingBell', 'BallowGivenKey', 'ForgeDaughterWhiteFlowerDlg', 'SeenDivingBellGoneAbyss', 'MetMaskMaker', 'MetMaskMakerAct3', 'MaskMakerTalkedRelationship', 'MetArchitect', 'MetArchitectAct3', 'PurchasedArchitectKey', 'ArchitectTalkedCrest', 'LibrarianAskedForRelic', 'GivenLibrarianRelic', 'LibrarianMetAct3', 'LibrarianCollectionComplete', 'MetGourmandServant', 'GotGourmandReward', 'metCaretaker', 'CaretakerOfferedSnareQuest', 'MetSeamstress', 'SeamstressOfferedQuest', 'BlueScientistMet', 'BlueScientistQuestOffered', 'BlueAssistantBloodCount', 'BlueScientistDead', 'metGrubFarmer', 'grubFarmLevel', 'metGrubFarmerAct3', 'MetGrubFarmerMimic', 'GrubFarmerSilkGrubsSold', 'metSwampMuckmen', 'MetBelltownShopkeep', 'MetBelltownGreeter', 'MetBelltownCouriers', 'PinsmithMetBelltown', 'BelltownHermitMet', 'MetBelltownBagpipers', 'MetBelltownDoctor', 'BelltownDoctorCuredCurse', 'MetBelltownRelicDealer', 'MetFisherHomeFull', 'MetPilgrimsRestShop', 'MetAntMerchant', 'SeenAntMerchantDead', 'SprintMasterCurrentRace', 'SprintMasterExtraRaceWon', 'MetPinChallengeBug', 'PinGalleryWallet'
         ] : [];
         const locationEvents = pd ? [
             'BonePlazaOpened', 'bonegraveOpen', 'greatBoneGateOpened', 'crashingIntoGreymoor', 'crashedIntoGreymoor', 'hitCrowCourtSwitch', 'OpenedCrowSummonsDoor', 'PickedUpCrowMemento', 'sethLeftShellwood', 'openedDust05Gate', 'UnlockedDustCage', 'FixedDustBellBench', 'EnclaveStatePilgrimSmall', 'enclaveLevel', 'cityMerchantSaved', 'wardWoken', 'bankOpened', 'leftTheGrandForum', 'uncagedGiantFlea', 'tamedGiantFlea', 'completedSuperJumpSequence', 'fullyEnteredVerdania', 'ShamanRitualCursedConvo', 'FleaGamesStarted', 'FleaGamesEnded'
@@ -541,40 +544,45 @@ class App extends React.Component {
                 <div className="instructions">
                     <h2>How to Use</h2>
                     <ol className="important-note">
-                        <li>Find your save file (e.g., <code>user1.dat</code> for save slot 1,<code>user2.dat</code> for slot 2, etc (4 total slots)) in one of the locations listed below. You can copy and paste the address below into Windows Explorer to get to that directory</li>
+                        <li>Find your save file ( user1.dat for save slot 1, user2.dat for save slot 2, etc up to 4 total slots ) in one of the locations listed below. You can copy and paste the address below into Windows Explorer to get to that directory</li>
                         <li>Drag and drop the file onto the designated area, or use the browse button to select it.</li>
                         <li>Scroll down and edit any values you wish to change.</li>
                         <li>Click "Save & download updated save file (.dat)" and replace your old save file with the newly downloaded one or save it into a different slot.</li>
                     </ol>
                     <p className="notes">For Steam, each user’s save files will be in a sub-folder of their Steam user ID. For non-Steam builds, save files will be in a default sub-folder. </p>
-                    <table className="save-locations-table"><tbody>
-                        <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
-                            <td>Windows</td>
-                            <td><code>{savePaths.windows}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windows)}>{copiedPath === savePaths.windows ? 'Copied!' : 'Copy Path'}</button></td>
-                        </tr>
-                        <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
-                            <td>Microsoft Store</td>
-                            <td><code>{savePaths.windowsStore}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windowsStore)}>{copiedPath === savePaths.windowsStore ? 'Copied!' : 'Copy Path'}</button></td>
-                        </tr>
-                        <tr className={currentOS === 'macos' ? 'highlighted' : ''}>
-                            <td>macOS (OS X)</td>
-                            <td><code>{savePaths.macos}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.macos)}>{copiedPath === savePaths.macos ? 'Copied!' : 'Copy Path'}</button></td>
-                        </tr>
-                        <tr className={currentOS === 'linux' ? 'highlighted' : ''}>
-                            <td>Linux/Steamdeck</td>
-                            <td><code>{savePaths.linux}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.linux)}>{copiedPath === savePaths.linux ? 'Copied!' : 'Copy Path'}</button></td>
-                        </tr>
-                        {/* --- NEW SWITCH ROW --- */}
-                        <tr className="switch-row">
-                            <td>Nintendo Switch</td>
-                            <td className="switch-cell">
-                                <input id="switch-mode" type="checkbox" checked={switchMode} onChange={this.handleSwitchModeToggle} />
-                                <label htmlFor="switch-mode">
-                                    Enables Switch save file loading/saving and converting between PC. Use <a href="https://github.com/J-D-K/JKSV" target="_blank" rel="noopener noreferrer">JKSV</a>
-                                </label>
-                            </td>
-                        </tr>
-                    </tbody></table>
+                    <table className="save-locations-table">
+                        <thead>
+                            <tr>
+                                <th colSpan="2">Silksong save locations</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
+                                <td>Windows</td>
+                                <td><code>{savePaths.windows}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windows)}>{copiedPath === savePaths.windows ? 'Copied!' : 'Copy Path'}</button></td>
+                            </tr>
+                            <tr className={currentOS === 'windows' ? 'highlighted' : ''}>
+                                <td>Microsoft Store</td>
+                                <td><code>{savePaths.windowsStore}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.windowsStore)}>{copiedPath === savePaths.windowsStore ? 'Copied!' : 'Copy Path'}</button></td>
+                            </tr>
+                            <tr className={currentOS === 'macos' ? 'highlighted' : ''}>
+                                <td>macOS (OS X)</td>
+                                <td><code>{savePaths.macos}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.macos)}>{copiedPath === savePaths.macos ? 'Copied!' : 'Copy Path'}</button></td>
+                            </tr>
+                            <tr className={currentOS === 'linux' ? 'highlighted' : ''}>
+                                <td>Linux/Steamdeck</td>
+                                <td><code>{savePaths.linux}</code> <button className="btn-secondary btn-copy" onClick={() => this.handleCopyPath(savePaths.linux)}>{copiedPath === savePaths.linux ? 'Copied!' : 'Copy Path'}</button></td>
+                            </tr>
+                            <tr className="switch-row">
+                                <td>Nintendo Switch</td>
+                                <td className="switch-cell">
+                                    <input id="switch-mode" type="checkbox" checked={switchMode} onChange={this.handleSwitchModeToggle} />
+                                    <label htmlFor="switch-mode">
+                                        Enables Switch save file loading/saving and converting between PC. Use <a href="https://github.com/J-D-K/JKSV" target="_blank" rel="noopener noreferrer">JKSV</a>
+                                    </label>
+                                </td>
+                            </tr>
+                        </tbody></table>
                 </div>
 
                 <div className="warning">Always backup your save files (.dat) before editing!</div>
@@ -589,7 +597,6 @@ class App extends React.Component {
                 <div className="save-buttons">
                     <button className="btn-secondary" onClick={this.handleSaveJson} disabled={!saveData || !!jsonError}>Save .json</button>
 
-                    {/* --- UPDATED SAVE BUTTONS --- */}
                     <button className="btn-primary" onClick={this.handleSaveEncrypted} disabled={!saveData || !!jsonError}>
                         {switchMode ? 'Save & download PC save file' : 'Save & download updated save file (.dat)'}
                     </button>
@@ -602,8 +609,6 @@ class App extends React.Component {
 
                 {saveData && (
                     <div className="editor-container">
-                        {/* The rest of the editor UI remains unchanged... */}
-                        {/* ... (all the sections for stats, upgrades, etc.) ... */}
                         <div className="editor-section">
                             <div className="editor-section-header"><h2>Basic Stats</h2></div>
                             <div className="form-grid">
@@ -897,6 +902,11 @@ class App extends React.Component {
                             <div className="form-grid">{this.renderEventInputs(mainStoryEvents)}</div>
                             <hr />
 
+                            <h4>Slab Kidnapping / Prison</h4>
+                            <p className="note">Decheck these so Hornet can be kidnapped in Act 1.</p>
+                            <div className="form-grid">{this.renderEventInputs(slabKidnappingEvents)}</div>
+                            <hr />
+
                             <h4>Bell Shrines & Memories</h4>
                             <div className="form-grid form-grid-columns-4">{this.renderEventInputs(bellShrineAndMemoryEvents)}</div>
                             <hr />
@@ -923,6 +933,14 @@ class App extends React.Component {
 
                             <h4>Nuu & Gilly</h4>
                             <div className="form-grid">{this.renderEventInputs(nuuAndGillyEvents)}</div>
+                            <hr />
+
+                            <h4>Pilby</h4>
+                            <div className="form-grid">{this.renderEventInputs(pilbyEvents)}</div>
+                            <hr />
+
+                            <h4>Green Prince</h4>
+                            <div className="form-grid">{this.renderEventInputs(greenPrinceEvents)}</div>
                             <hr />
 
                             <h4>Other NPCs & Quests</h4>
